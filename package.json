@@ -24,7 +24,7 @@
     "netlify-cli": "^23.13.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "^7.18.4",
+    "react-router": "^8.4.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.2",
     "vite": "^7.1.5"

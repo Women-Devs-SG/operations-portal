@@ -25,6 +25,12 @@ export interface ApiResponse {
 
 export type FormStatus = { kind: 'success' | 'error'; message: string } | null;
 
+export type LoadTasksResult =
+  | { kind: 'success' }
+  | { kind: 'unauthorized'; message: string }
+  | { kind: 'server-error'; message: string }
+  | { kind: 'network-error'; message: string };
+
 export interface TasksResponse extends ApiResponse {
   tasks?: Task[];
 }

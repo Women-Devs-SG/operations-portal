@@ -89,13 +89,16 @@ wds-ops-portal/
 │   ├── specs/                # Current behaviour, per capability
 │   └── changes/              # Proposed work, per change
 ├── src/
-│   ├── App.tsx               # Routes, unlock flow, and task dashboard
+│   ├── App.tsx               # Auth state and route orchestration
 │   ├── api.ts                # Typed API and session-password helpers
 │   ├── components/
 │   │   └── TaskCard.tsx       # Reusable task summary
+│   ├── demoMode.ts           # Build-time demo-mode flag for page messaging
 │   ├── main.tsx              # React entry point
 │   ├── pages/
-│   │   └── TaskCreatePage.tsx # Event-task creation route
+│   │   ├── EventsPage.tsx     # Event list and dashboard
+│   │   ├── TaskCreatePage.tsx # Event creation route and form state
+│   │   └── UnlockPage.tsx     # Password gate
 │   ├── styles.css            # Tailwind entry point and global base styles
 │   └── types.ts              # Shared frontend data contracts
 ├── scripts/
