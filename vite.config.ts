@@ -9,8 +9,7 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __DEMO_MODE__: JSON.stringify(['1', 'true'].includes(demoMode?.trim().toLowerCase() ?? '')),
     },
-    // Netlify Dev applies the production CSP locally, so skip React Fast Refresh there.
-    plugins: [tailwindcss(), ...(command === 'build' ? [react()] : [])],
+    plugins: [react(), tailwindcss()],
     publicDir: command === 'build' ? 'static' : false,
     optimizeDeps: { entries: ['index.html'] },
   };

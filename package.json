@@ -7,6 +7,7 @@
     "node": ">=22.22.0"
   },
   "scripts": {
+    "predev": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\"",
     "dev": "netlify dev",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",

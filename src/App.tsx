@@ -1,21 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Navigate, Route, Routes, useNavigate } from 'react-router';
 import { clearPassword, getPassword, getTasks, setPassword } from './api';
+import ProtectedRoute from './components/ProtectedRoute';
 import EventsPage from './pages/EventsPage';
 import TaskCreatePage from './pages/TaskCreatePage';
 import UnlockPage from './pages/UnlockPage';
-import type { LoadTasksResult, Task } from './types';
-
-type View = 'checking' | 'locked' | 'portal';
-type UnlockResult = 'success' | 'unauthorized' | 'error';
+import type { LoadTasksResult, PortalView, Task, UnlockResult } from './types';
 
 export default function App() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const [view, setView] = useState<View>('checking');
+  const [view, setView] = useState<PortalView>('checking');
   const [gateError, setGateError] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [listMessage, setListMessage] = useState('Loading tasks…');
+  const initialSessionCheck = useRef<Promise<LoadTasksResult> | null>(null);
 
   const lock = useCallback((message: string) => {
     clearPassword();
@@ -56,29 +54,28 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!getPassword()) {
+    const password = getPassword();
+    if (!password) {
       setView('locked');
-      if (location.pathname !== '/unlock') {
-        navigate('/unlock', { replace: true });
-      }
       return;
     }
 
-    void loadTasks(getPassword()).then((result) => {
+    let active = true;
+    initialSessionCheck.current ??= loadTasks(password);
+    void initialSessionCheck.current.then((result) => {
+      if (!active) return;
       if (result.kind === 'success') {
         setView('portal');
-        if (location.pathname === '/unlock') {
-          navigate('/', { replace: true });
-        }
       } else if (result.kind === 'unauthorized') {
         lock(result.message);
-        navigate('/unlock', { replace: true });
       } else {
         showGateError(result.message);
-        navigate('/unlock', { replace: true });
       }
     });
-  }, [loadTasks, lock, location.pathname, navigate, showGateError]);
+    return () => {
+      active = false;
+    };
+  }, [loadTasks, lock, showGateError]);
 
   async function handleUnlock(password: string): Promise<UnlockResult> {
     setGateError('');
@@ -106,15 +103,36 @@ export default function App() {
     <Routes>
       <Route
         path="/unlock"
-        element={<UnlockPage checking={view === 'checking'} error={gateError} onUnlock={handleUnlock} />}
+        element={
+          view === 'portal' ? (
+            <Navigate to="/" replace />
+          ) : (
+            <UnlockPage checking={view === 'checking'} error={gateError} onUnlock={handleUnlock} />
+          )
+        }
       />
       <Route
         path="/"
-        element={view === 'portal' ? <EventsPage listMessage={listMessage} onCreateEvent={() => navigate('/create-task')} tasks={tasks} /> : <Navigate to="/unlock" replace />}
+        element={
+          <ProtectedRoute view={view}>
+            <EventsPage
+              listMessage={listMessage}
+              onCreateEvent={() => navigate('/create-task')}
+              tasks={tasks}
+            />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/create-task"
-        element={view === 'portal' ? <TaskCreatePage onEventCreated={() => loadTasks()} onSessionExpired={handleSessionExpired} /> : <Navigate to="/unlock" replace />}
+        element={
+          <ProtectedRoute view={view}>
+            <TaskCreatePage
+              onEventCreated={() => loadTasks()}
+              onSessionExpired={handleSessionExpired}
+            />
+          </ProtectedRoute>
+        }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

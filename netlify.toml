@@ -4,7 +4,7 @@
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "22"
+  NODE_VERSION = "22.22.0"
 
 [dev]
   command = "vite --configLoader runner"
@@ -30,9 +30,12 @@
    to = "/index.html"
    status = 200
 
-# Production page security headers live in static/_headers and are copied into
-# dist during builds. Netlify Dev also applies them, so vite.config.ts omits the
-# inline React Fast Refresh preamble while serving locally.
+# Production page security headers live in static/_headers; `vite build` copies
+# them to dist/_headers for deployment. Netlify Dev also reads _headers from the
+# project root and dist (not the dev publish dir), so the predev script deletes
+# dist first — otherwise the production CSP blocks Vite's inline React preamble
+# and injected styles locally. Header rules load when the dev server starts, so
+# a clean start is enough.
 
 # Task data is private; never let a proxy or the browser cache an API response.
 [[headers]]
