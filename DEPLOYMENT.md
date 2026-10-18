@@ -3,10 +3,10 @@
 The portal is a React + TypeScript frontend built into `dist/`, plus two Netlify
 Functions in `netlify/functions/`. There is no long-running server.
 
-| Path | Function | Method |
-| --- | --- | --- |
-| `/api/create-task` | `netlify/functions/create-task.mjs` | POST |
-| `/api/tasks` | `netlify/functions/tasks.mjs` | GET |
+| Path               | Function                            | Method |
+| ------------------ | ----------------------------------- | ------ |
+| `/api/create-task` | `netlify/functions/create-task.mjs` | POST   |
+| `/api/tasks`       | `netlify/functions/tasks.mjs`       | GET    |
 
 Both require the shared portal password in an `X-Portal-Password` header.
 
@@ -23,16 +23,16 @@ can never accidentally run unprotected.
 
 **Site configuration → Environment variables.** Never commit these.
 
-| Variable | Notes |
-| --- | --- |
-| `PORTAL_PASSWORD` | From step 1. Share with the team out of band. |
-| `GOOGLE_CLIENT_EMAIL` | Service account email. |
-| `GOOGLE_PRIVATE_KEY` | Paste the whole key including `-----BEGIN PRIVATE KEY-----`. Netlify preserves `\n` escapes; the code converts them. |
-| `GOOGLE_SHEET_ID` | Target spreadsheet. |
-| `GOOGLE_DRIVE_PARENT_FOLDER_ID` | Parent folder for new project folders. |
-| `WDS_INTRO_DOC_ID` | Optional. Intro slides to copy. |
-| `TELEGRAM_BOT_TOKEN` | Optional. Omit to disable notifications. |
-| `TELEGRAM_CHAT_ID` | Optional. |
+| Variable                        | Notes                                                                                                                |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `PORTAL_PASSWORD`               | From step 1. Share with the team out of band.                                                                        |
+| `GOOGLE_CLIENT_EMAIL`           | Service account email.                                                                                               |
+| `GOOGLE_PRIVATE_KEY`            | Paste the whole key including `-----BEGIN PRIVATE KEY-----`. Netlify preserves `\n` escapes; the code converts them. |
+| `GOOGLE_SHEET_ID`               | Target spreadsheet.                                                                                                  |
+| `GOOGLE_DRIVE_PARENT_FOLDER_ID` | Parent folder for new project folders.                                                                               |
+| `WDS_INTRO_DOC_ID`              | Optional. Intro slides to copy.                                                                                      |
+| `TELEGRAM_BOT_TOKEN`            | Optional. Omit to disable notifications.                                                                             |
+| `TELEGRAM_CHAT_ID`              | Optional.                                                                                                            |
 
 Scope them to **all deploy contexts**, or production only if you do not want
 deploy previews touching the live Sheet. Deploy previews get public URLs, so
@@ -56,7 +56,7 @@ already sets everything:
 - build command: `npm run build`
 - publish directory: `dist`
 - functions directory: `netlify/functions`
-- Node version: 22
+- Node version: 22.22.0 (also pinned in `.nvmrc`)
 
 Netlify installs dependencies, runs the Vite build, and bundles the functions
 automatically.

@@ -25,6 +25,9 @@ export interface ApiResponse {
 
 export type FormStatus = { kind: 'success' | 'error'; message: string } | null;
 
+export type PortalView = 'checking' | 'locked' | 'portal';
+export type UnlockResult = 'success' | 'unauthorized' | 'error';
+
 export type LoadTasksResult =
   | { kind: 'success' }
   | { kind: 'unauthorized'; message: string }

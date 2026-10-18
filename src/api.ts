@@ -21,7 +21,9 @@ async function parseJson<T>(response: Response): Promise<T | undefined> {
   }
 }
 
-export async function getTasks(password = getPassword()): Promise<{ response: Response; data?: TasksResponse }> {
+export async function getTasks(
+  password = getPassword(),
+): Promise<{ response: Response; data?: TasksResponse }> {
   try {
     const response = await fetch(`${API_BASE_URL}/tasks`, { headers: headers(password) });
     return { response, data: await parseJson<TasksResponse>(response) };
@@ -31,7 +33,9 @@ export async function getTasks(password = getPassword()): Promise<{ response: Re
   }
 }
 
-export async function createTask(input: TaskInput): Promise<{ response: Response; data?: ApiResponse }> {
+export async function createTask(
+  input: TaskInput,
+): Promise<{ response: Response; data?: ApiResponse }> {
   try {
     const response = await fetch(`${API_BASE_URL}/create-task`, {
       method: 'POST',

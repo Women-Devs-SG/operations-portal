@@ -89,7 +89,10 @@ export default async function handler(req) {
     });
   } catch (error) {
     console.error('create-task: sheets append failed:', error.message);
-    return json(502, { status: 'error', message: 'Could not save the task to the sheet database.' });
+    return json(502, {
+      status: 'error',
+      message: 'Could not save the task to the sheet database.',
+    });
   }
 
   // Drive and Telegram are best-effort: the task is already recorded.

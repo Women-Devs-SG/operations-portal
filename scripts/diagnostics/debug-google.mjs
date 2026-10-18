@@ -17,7 +17,10 @@ const sheets = google.sheets({ version: 'v4', auth });
 const drive = google.drive({ version: 'v3', auth });
 
 try {
-  const res = await sheets.spreadsheets.get({ spreadsheetId: process.env.GOOGLE_SHEET_ID, ranges: ['Tasks!A1:A1'] });
+  const res = await sheets.spreadsheets.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    ranges: ['Tasks!A1:A1'],
+  });
   console.log('SPREADSHEET_OK', res.data.spreadsheetId);
 } catch (err) {
   console.error('SPREADSHEET_ERR');
@@ -25,7 +28,10 @@ try {
 }
 
 try {
-  const res = await drive.files.get({ fileId: process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID, fields: 'id,name' });
+  const res = await drive.files.get({
+    fileId: process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID,
+    fields: 'id,name',
+  });
   console.log('FOLDER_OK', res.data.id, res.data.name);
 } catch (err) {
   console.error('FOLDER_ERR');
