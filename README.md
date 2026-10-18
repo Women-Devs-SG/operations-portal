@@ -55,7 +55,7 @@ fictional fixtures and a temporary local store without contacting Google or Tele
 ## Key Capabilities
 
 1. **Automated Directory Provisioning:** Creates project-specific sub-directories within a designated Google Drive parent folder upon task submission.
-2. **Document Template Duplication:** Copies standardized operational templates (e.g., *WDS Intro & Overview*) into newly created project directories.
+2. **Document Template Duplication:** Copies standardized operational templates (e.g., _WDS Intro & Overview_) into newly created project directories.
 3. **Database Logging:** Appends structured event metadata (`Task_ID`, `Task_Name`, `Event_Date`, `Location`, `Description`, `Status`, `Drive_URL`, `Form_QR_URL`, `Created_At`) to the Google Sheet.
 4. **QR Code Generation:** Constructs inline dynamic QR codes for optional feedback and registration forms.
 5. **Real-time Event Broadcasting:** Dispatches formatted HTML notification payloads to designated Telegram channels or groups, with all user-supplied values escaped.
@@ -69,6 +69,7 @@ fictional fixtures and a temporary local store without contacting Google or Tele
 wds-ops-portal/
 ├── .env.example              # Template for required environment variables
 ├── .gitignore                # Git exclusion rules (Enforces zero credential leak)
+├── .nvmrc                    # Required Node.js version
 ├── netlify.toml              # Netlify build, /api/* rewrites, and security headers
 ├── package.json              # Project dependencies and script definitions
 ├── vite.config.ts            # React and Tailwind Vite plugins
@@ -120,15 +121,15 @@ Tailwind theme live in `src/styles.css`; Vite loads Tailwind through its plugin.
 > Only the first two are needed for [demo mode](#try-it-locally-no-credentials-needed).
 > Everything below that is required only to run against real data.
 
-* **Node.js:** `v20` or higher (Netlify builds on v22)
-* **npm:** `v9.x` or higher
-* **Netlify CLI:** Installed locally with `npm install` from the project dependencies.
-* **Google Cloud Project:** Enabled **Google Sheets API** and **Google Drive API**
-* **Google Service Account:** Generated key file (`JSON`) with **Editor** permissions granted to:
-  * Target Google Sheet
-  * Destination Google Drive Parent Folder
-  * WDS Intro Template File
-* **Telegram Bot:** Token generated via `@BotFather` with administrative posting rights in the target chat/channel.
+- **Node.js:** `v22.22.0` or higher
+- **npm:** `v9.x` or higher
+- **Netlify CLI:** Installed locally with `npm install` from the project dependencies.
+- **Google Cloud Project:** Enabled **Google Sheets API** and **Google Drive API**
+- **Google Service Account:** Generated key file (`JSON`) with **Editor** permissions granted to:
+  - Target Google Sheet
+  - Destination Google Drive Parent Folder
+  - WDS Intro Template File
+- **Telegram Bot:** Token generated via `@BotFather` with administrative posting rights in the target chat/channel.
 
 ---
 
@@ -158,8 +159,8 @@ TELEGRAM_CHAT_ID="-1001234567890"
 PORTAL_PASSWORD="generate-a-long-random-value"
 
 # Demo mode: serve fictional fixtures, skip the password, call nothing external.
-# Set to 1 for local development without credentials. NEVER set it in the
-# Netlify production context — the API returns 503 to everything if you do.
+# Set to 1 for local `netlify dev` without credentials. Deployed demos require
+# a separate server-side preview permission; never enable demo mode in production.
 DEMO_MODE=1
 ```
 
@@ -193,17 +194,24 @@ place to work on a fix.
 To run against real Google credentials instead, set `DEMO_MODE=0` in `.env` and fill
 in the rest, then follow the procedure below.
 
+Demo mode is enabled only for local Netlify Dev by default. A Deploy Preview can
+serve fixtures only when `DEMO_MODE_PREVIEW=1` is configured for the Functions
+scope in Deploy Preview contexts only. Do not configure that permission for
+production. Missing runtime permission fails closed.
+
 ---
 
 ## Local Setup With Real Integrations
 
 1. **Clone repository:**
+
    ```bash
    git clone https://github.com/Women-Devs-SG/volunteer-portal.git
    cd volunteer-portal
    ```
 
 2. **Install node dependencies:**
+
    ```bash
    npm install
    ```
@@ -213,6 +221,7 @@ in the rest, then follow the procedure below.
    key, portal password, and any optional Telegram values.
 
 4. **Launch application:**
+
    ```bash
    npm run dev
    ```
@@ -234,9 +243,11 @@ in Netlify's production context so fictional data cannot be presented as live
 volunteer data.
 
 ### `POST /api/create-task`
+
 Executes full automation sequence (Drive creation, template copy, GSheet log, Telegram notification).
 
-* **Request Body (`application/json`):**
+- **Request Body (`application/json`):**
+
   ```json
   {
     "taskName": "WDS Tech Workshop 2026",
@@ -247,7 +258,7 @@ Executes full automation sequence (Drive creation, template copy, GSheet log, Te
   }
   ```
 
-* **Response (`200 OK`):**
+- **Response (`200 OK`):**
   ```json
   {
     "status": "success",
@@ -258,9 +269,10 @@ Executes full automation sequence (Drive creation, template copy, GSheet log, Te
   ```
 
 ### `GET /api/tasks`
+
 Retrieves logged task entries from the `Tasks` sheet tab.
 
-* **Response (`200 OK`):**
+- **Response (`200 OK`):**
   ```json
   {
     "status": "success",
@@ -288,11 +300,11 @@ Three hand-run scripts live in `scripts/diagnostics/`. They are not part of the 
 suite, nothing imports them, and Netlify never deploys them—the Vite-generated
 `dist/` directory is published. Each script loads `.env`, so fill it in first.
 
-| Script | What it does | Touches live data |
-| --- | --- | --- |
-| `node scripts/diagnostics/debug-google.mjs` | Checks the service account can reach `GOOGLE_SHEET_ID` and `GOOGLE_DRIVE_PARENT_FOLDER_ID`. Read-only. | No |
-| `node scripts/diagnostics/test-sheet-write.mjs` | Appends one literal `TEST`/`DEBUG` row to the `Tasks` tab. | **Yes** — writes a row you must delete by hand |
-| `node scripts/diagnostics/test-create-task.mjs` | Posts a task through a running `npm run dev` server, end to end. | **Yes** in real mode — creates a Drive folder, a Sheet row, and a Telegram message |
+| Script                                          | What it does                                                                                           | Touches live data                                                                  |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `node scripts/diagnostics/debug-google.mjs`     | Checks the service account can reach `GOOGLE_SHEET_ID` and `GOOGLE_DRIVE_PARENT_FOLDER_ID`. Read-only. | No                                                                                 |
+| `node scripts/diagnostics/test-sheet-write.mjs` | Appends one literal `TEST`/`DEBUG` row to the `Tasks` tab.                                             | **Yes** — writes a row you must delete by hand                                     |
+| `node scripts/diagnostics/test-create-task.mjs` | Posts a task through a running `npm run dev` server, end to end.                                       | **Yes** in real mode — creates a Drive folder, a Sheet row, and a Telegram message |
 
 `scripts/diagnostics/test-create-task.mjs` needs `npm run dev` running in another terminal. It reads
 `PORTAL_PASSWORD` from `.env` and sends it as `X-Portal-Password`; without it the

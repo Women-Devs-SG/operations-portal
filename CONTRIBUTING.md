@@ -75,17 +75,22 @@ folder. Just open a PR.
 ## Before you open a PR
 
 ```bash
+npm run format:check
 npx @fission-ai/openspec@latest validate --all --strict
 node --check netlify/functions/create-task.mjs    # and any file you touched
 npm audit --omit=dev
 ```
 
-There is no test framework. `scripts/diagnostics/debug-google.mjs` and the
-`scripts/diagnostics/test-*.mjs` scripts are hand-run diagnostics, not a suite.
-The Google diagnostics need real credentials; don't run them in demo mode.
+Run `npm run format` to format the repository with the checked-in Prettier
+configuration. CI checks formatting on each pull request.
+
+Run `npm test` for the automated demo-mode/API regression tests.
+`scripts/diagnostics/debug-google.mjs` and the
+`scripts/diagnostics/test-*.mjs` scripts are additional hand-run diagnostics;
+the Google diagnostics need real credentials and must not run in demo mode.
 
 Conventions the code follows: ESM `import` only, two-space indent, single quotes,
-semicolons. Comments explain *why*, not *what*, and are sparse. Match the file you
+semicolons. Comments explain _why_, not _what_, and are sparse. Match the file you
 are editing.
 
 ## How PRs get merged

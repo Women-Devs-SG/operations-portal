@@ -7,20 +7,25 @@ returns `503` to everything — so a contributor with no `.env` gets a `503` bef
 any handler logic runs. Demo mode has to slot in ahead of that check without
 weakening it for the real deployment.
 
-The live site is the team's internal tool. Whatever switches demo mode on must be
-incapable of switching on there, and that has to hold even if someone copies the
-whole variable set from a local `.env` into Netlify by hand.
+The live site is the team's internal tool. Demo mode must not activate just
+because `DEMO_MODE` was copied from a local `.env` into a deployed Function.
 
-Netlify sets `CONTEXT` on every function invocation — `production`,
-`deploy-preview`, `branch-deploy`, or `dev` — which gives a signal the deployment
-controls and a local contributor does not need to think about.
+Netlify documents `CONTEXT` as build metadata, not as a guaranteed Function
+runtime variable. The guard therefore must not infer permission from a missing
+`CONTEXT`. Local permission comes from Netlify Dev's `NETLIFY_DEV=true`. A
+shareable Deploy Preview requires a separate `DEMO_MODE_PREVIEW=1` variable set
+through Netlify's UI/API, scoped to **Functions** and **Deploy Previews only**.
+That variable must not be available to production Functions.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
 - `cp .env.example .env && npm run dev` yields a working portal with no credentials.
-- Demo mode is structurally unreachable on the production site.
+- Demo mode is disabled by default and structurally unreachable in an explicitly
+  marked production context.
+- When deployment context is unavailable, demo mode still requires an explicit
+  permitted-runtime signal; missing configuration never enables it.
 - A contributor exercising the demo exercises the real request contract: same
   validation, same status codes, same response shape.
 - No fixture resembles a real event, volunteer, or Drive link.
@@ -34,22 +39,23 @@ controls and a local contributor does not need to think about.
 
 ## Decisions
 
-**Two conditions, not three.** An earlier sketch also required Google credentials to
-be absent, so demo mode and real credentials could never coexist. That interacts
-badly with a maintainer who keeps real credentials in `.env`: with a stale
-`DEMO_MODE=1` they would get a hard refusal on a machine that was working
-yesterday. The rule is therefore just: demo mode is on when `DEMO_MODE` is truthy,
-except in the `production` context, where its presence is a fatal misconfiguration.
-Credentials sitting unused alongside it are harmless, because demo mode never calls
-Google. What covers the confusion case is a warning logged on every demo request,
-not a refusal.
+**Permission is separate from the request to demo.** `DEMO_MODE` requests demo
+behavior, but does not authorize it. Local `netlify dev` is permitted by
+`NETLIFY_DEV=true`. A deployed demo is permitted only when
+`DEMO_MODE_PREVIEW=1` is available to the Function from a Netlify Deploy Preview
+scope. This setting is server-side; request headers and query parameters cannot
+grant demo access. It must not be configured for production.
 
-**`DEMO_MODE` in production is a `503`, not an ignore.** Silently ignoring it would
-be defensible — the site would keep working — but it would also mean the one
-variable that must never appear in production could appear there indefinitely with
-nobody noticing. Failing loudly matches how `lib/auth.mjs` already treats a missing
-password: a portal that is misconfigured should stop, not guess. The blast radius is
-a variable no deployment needs, and the error message names it directly.
+**Unknown and invalid configurations fail closed.** If `DEMO_MODE` has an
+unrecognized value, if the runtime is neither local Netlify Dev nor explicitly
+authorized for a preview, or if demo is requested in an explicit production
+context, return `503` before authentication or data access. In particular,
+`CONTEXT` being absent is not evidence that the request is local or safe.
+
+**A rejected demo request never falls through to the real path.** Returning `503`
+for invalid or unauthorized demo configuration avoids both serving fixtures and
+accidentally continuing into the Google-backed path with ambiguous configuration.
+When `DEMO_MODE` is off, the existing password-protected real path is unchanged.
 
 **Demo mode skips the password rather than shipping a demo password.** There is
 nothing behind the gate but fixtures, and a documented shared demo password is worse
@@ -97,17 +103,16 @@ lose one task; for one person clicking a form that does not justify a lock file.
 
 ## Risks / Trade-offs
 
-- **A stale `DEMO_MODE=1` in a maintainer's `.env` shows fake data.** Mitigated by a
-  per-request warning log, not by refusing to run. Accepted: the alternative broke
-  working machines.
-- **Demo mode is unauthenticated by design.** Safe only because it is confined to
-  non-production contexts. If someone deploys a branch context with `DEMO_MODE` set,
-  that URL serves fixtures to anyone who finds it — which is the intended behaviour
-  for a demo, and leaks nothing real.
-- **The interlock trusts `CONTEXT`.** It is set by Netlify, not by the request, so a
-  caller cannot forge it; but a non-Netlify host would not set it at all, and demo
-  mode would then be reachable wherever `DEMO_MODE` is set. Netlify is the only
-  supported target, and `netlify.toml` is the deployment contract.
+- **A stale `DEMO_MODE=1` cannot authorize a deployed demo.** The request is refused
+  unless local Netlify Dev or the separately scoped preview permission is present.
+- **Demo mode is unauthenticated by design.** Deploy Preview permission is therefore
+  intentionally limited to Netlify Functions in Deploy Preview context. Such
+  previews serve fictional fixtures only and remain read-only.
+- **Preview safety depends on Netlify variable scope.** Netlify does not document
+  `CONTEXT` as a Function runtime variable. A maintainer must verify that
+  `DEMO_MODE_PREVIEW` is scoped to Functions and Deploy Previews only, and absent
+  from production. Until that is verified on a Deploy Preview, preview demo mode
+  must remain disabled.
 - **Fixtures drift.** If the Sheet's column layout changes, the fixture file is a
   second place to update. `task-registry`'s spec is the shared reference for both.
 - **`portal-access` is not yet in the main specs.** Its requirements live in the

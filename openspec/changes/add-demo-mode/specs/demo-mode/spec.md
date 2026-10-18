@@ -8,14 +8,25 @@ demonstrated without real community data on screen.
 
 ### Requirement: Demo Mode Activation
 
-The system SHALL serve fixture-backed responses when the `DEMO_MODE` environment
-variable is truthy, and SHALL make no Google or Telegram calls while it is active.
+The system SHALL serve fixture-backed responses only when `DEMO_MODE` is truthy
+and the request executes in an explicitly permitted runtime. It SHALL make no
+Google or Telegram calls while demo mode is active. Demo mode SHALL be disabled
+when its permission is missing, invalid, or ambiguous.
 
-#### Scenario: Demo mode enabled
+#### Scenario: Local demo mode enabled
 
-- **WHEN** `DEMO_MODE` is set to `1` or `true` outside the production context
+- **WHEN** `DEMO_MODE` is set to `1` or `true` and the function runs under
+  `netlify dev` with `NETLIFY_DEV=true`
 - **THEN** both endpoints answer from the fixture-backed store
 - **AND** no Sheets, Drive, or Telegram request is issued
+
+#### Scenario: Explicitly permitted Deploy Preview
+
+- **WHEN** `DEMO_MODE` is set to `1` or `true` and the server-side
+  `DEMO_MODE_PREVIEW=1` permission is available to Functions in a Deploy Preview
+- **THEN** both endpoints answer from the fixture-backed store
+- **AND** no Sheets, Drive, or Telegram request is issued
+- **AND** the deployed demo is read-only
 
 #### Scenario: Demo mode absent
 
@@ -23,16 +34,33 @@ variable is truthy, and SHALL make no Google or Telegram calls while it is activ
 - **THEN** both endpoints behave exactly as they do today, contacting Google and
   requiring the shared password
 
+#### Scenario: Demo requested without a permitted runtime
+
+- **WHEN** `DEMO_MODE` is truthy but neither local Netlify Dev nor the explicit
+  Deploy Preview permission is present
+- **AND** `CONTEXT` is absent or has an unrecognized value
+- **THEN** both endpoints return `503` naming the demo configuration
+- **AND** neither endpoint serves fixtures or contacts Google or Telegram
+
+#### Scenario: Invalid demo configuration
+
+- **WHEN** `DEMO_MODE` has an unrecognized non-empty value
+- **THEN** both endpoints return `503` naming the demo configuration
+- **AND** neither endpoint falls through to the real-data path
+
 #### Scenario: Credentials present alongside demo mode
 
 - **WHEN** `DEMO_MODE` is truthy and real Google credentials are also configured
 - **THEN** demo mode still wins and the credentials go unused, so a machine that was
   working before does not start failing
 
-### Requirement: Production Interlock
+### Requirement: Production Interlock and Fail-Closed Permission
 
-The system SHALL refuse to serve any request when `DEMO_MODE` is truthy in the
-production deploy context, so fictional data can never reach the internal portal.
+The system SHALL refuse to serve any request when `DEMO_MODE` is truthy in an
+explicit production context. It SHALL also refuse demo mode when deployment
+context is unavailable unless a separate server-side permission explicitly
+authorizes a Deploy Preview. Client-provided headers, query parameters, or body
+fields SHALL NOT grant demo permission.
 
 #### Scenario: Demo mode set in production
 
@@ -40,12 +68,21 @@ production deploy context, so fictional data can never reach the internal portal
 - **THEN** every request receives `503` with a message naming `DEMO_MODE` as the
   misconfiguration
 - **AND** the misconfiguration is logged server-side
+- **AND** an explicit preview permission does not override production refusal
 
-#### Scenario: Demo mode in a non-production context
+#### Scenario: Missing context does not authorize demo mode
 
-- **WHEN** `DEMO_MODE` is truthy and the deploy context is anything other than
-  `production`, including a local dev server where no context is set
-- **THEN** demo mode activates normally
+- **WHEN** `DEMO_MODE` is truthy and `CONTEXT` is unavailable
+- **AND** `NETLIFY_DEV` is not `true`
+- **AND** no server-side preview permission is present
+- **THEN** every request receives `503`
+
+#### Scenario: Client input cannot enable preview demo mode
+
+- **WHEN** the server-side preview permission is absent
+- **AND** a request supplies a demo permission header, query parameter, or body
+  field
+- **THEN** the request receives `503` and demo mode remains disabled
 
 ### Requirement: Demo Mode Needs No Password
 
