@@ -32,12 +32,18 @@ export default function TaskCreatePage({ onEventCreated, onSessionExpired }: Tas
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const taskName = input.taskName.trim();
+    if (!taskName) {
+      setStatus({ kind: 'error', message: '❌ Event name is required.' });
+      return;
+    }
+
     setSubmitting(true);
     setStatus(null);
     try {
       const { response, data } = await createTask({
         ...input,
-        taskName: input.taskName.trim(),
+        taskName,
         formUrl: input.formUrl.trim(),
         eventLocation: input.eventLocation.trim(),
         eventOneLiner: input.eventOneLiner.trim(),
@@ -87,7 +93,8 @@ export default function TaskCreatePage({ onEventCreated, onSessionExpired }: Tas
 
         {isDemoMode && (
           <p className="mb-6 text-sm leading-relaxed text-muted">
-            Demo mode is for local-only testing and does not call Google Sheets, Drive, or Telegram.
+            Demo mode is available in local development and authorised Netlify Deploy Previews. It
+            does not call Google Sheets, Drive, or Telegram.
           </p>
         )}
 

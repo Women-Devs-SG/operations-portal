@@ -55,11 +55,6 @@ export default function App() {
 
   useEffect(() => {
     const password = getPassword();
-    if (!password) {
-      setView('locked');
-      return;
-    }
-
     let active = true;
     initialSessionCheck.current ??= loadTasks(password);
     void initialSessionCheck.current.then((result) => {

@@ -111,8 +111,10 @@ edge backs up the same header set by `lib/http.mjs`. The CSP is strict —
 - **A shared password is weak by construction.** No per-user attribution, and
   rotation means telling everyone at once. Accepted: it is a large improvement over
   none, and the fail-closed empty-value check blocks an unconfigured deployment.
-- **No rate limiting.** Timing-safe comparison is the only built-in brute-force
-  defence. Netlify rate limiting can be layered on later.
+- **No rate limiting.** Timing-safe comparison reduces content-dependent timing
+  differences; it does not prevent password guessing. Guessing resistance depends
+  on choosing a strong password or adding effective request limiting. Netlify rate
+  limiting can be layered on later.
 - **The password is only as private as the browser tab.** It lives in
   `sessionStorage` and is readable by any script on the page; the CSP forbidding
   third-party scripts is what keeps that acceptable.
