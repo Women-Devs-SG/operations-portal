@@ -74,7 +74,7 @@ export default function TaskCreatePage({ onEventCreated, onSessionExpired }: Tas
             <p className="mb-[3px] text-[.76rem] font-bold tracking-[.13em] text-accent uppercase">
               01
             </p>
-            <h2 className="text-[1.35rem] font-bold">Create an event</h2>
+            <h1 className="text-[1.35rem] font-bold">Create an event</h1>
           </div>
           <button
             className="mt-0 w-auto shrink-0 rounded-[9px] border border-field-border bg-white px-3 py-2 font-bold text-primary transition hover:bg-tint"
