@@ -40,11 +40,11 @@ prefer scoping secrets to production only.
 
 > ⚠️ Demo mode is disabled on deployed functions unless explicitly authorized.
 > Never set preview demo variables in production. A shareable Deploy Preview
-> requires `DEMO_MODE=1`, `DEMO_MODE_PREVIEW=1`, and
-> `DEMO_DEPLOY_CONTEXT=deploy-preview`, configured through the Netlify UI/API with
-> **Functions** scope and **Deploy Previews only**. The custom marker is necessary
-> because Netlify's built-in `CONTEXT` is build metadata and is not available to
-> deployed Functions. Authorized preview demos use fictional fixtures, need no
+> requires `DEMO_MODE=1` and `DEMO_MODE_PREVIEW=1`, configured through the Netlify
+> UI/API with **Functions** scope and **Deploy Previews only**. The Functions also
+> require Netlify's platform-provided runtime deploy context to be `deploy-preview`,
+> so accidentally broad variable scoping cannot authorize demo mode in production.
+> Authorized preview demos use fictional fixtures, need no
 > Google credentials, and are read-only because each function has its own
 > container. See [CONTRIBUTING.md](CONTRIBUTING.md).
 

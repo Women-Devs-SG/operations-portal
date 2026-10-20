@@ -3,7 +3,6 @@ import type { FormEvent } from 'react';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
 import TextInput from '../components/TextInput';
-import { isDemoMode } from '../demoMode';
 
 interface UnlockPageProps {
   checking: boolean;
@@ -34,12 +33,6 @@ export default function UnlockPage({ checking, error, onUnlock }: UnlockPageProp
         <h1 className="mb-4 text-[1.7rem] leading-tight font-bold sm:text-[2rem]">
           WDS Operations Portal
         </h1>
-        {isDemoMode && (
-          <p className="mb-5 text-sm leading-relaxed text-muted">
-            <strong>Local demo mode:</strong> enter any password to continue. It uses fictional data
-            and does not call Google Sheets, Drive, or Telegram.
-          </p>
-        )}
         {checking ? (
           <p className="text-sm text-muted">Checking your session…</p>
         ) : (

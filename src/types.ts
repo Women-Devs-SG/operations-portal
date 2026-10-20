@@ -35,5 +35,6 @@ export type LoadTasksResult =
   | { kind: 'network-error'; message: string };
 
 export interface TasksResponse extends ApiResponse {
+  demoMode: boolean;
   tasks?: Task[];
 }

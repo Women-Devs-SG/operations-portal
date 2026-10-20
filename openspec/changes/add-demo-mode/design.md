@@ -10,12 +10,10 @@ weakening it for the real deployment.
 The live site is the team's internal tool. Demo mode must not activate just
 because `DEMO_MODE` was copied from a local `.env` into a deployed Function.
 
-Netlify documents `CONTEXT` as build metadata and does not expose it to deployed
-Functions. Local permission comes from Netlify Dev's `NETLIFY_DEV=true`. A
-shareable Deploy Preview therefore requires both `DEMO_MODE_PREVIEW=1` and a
-custom `DEMO_DEPLOY_CONTEXT=deploy-preview` marker set through Netlify's UI/API,
-scoped to **Functions** and **Deploy Previews only**. Neither variable may be
-available to production Functions.
+Netlify Functions receive a platform-owned `context.deploy.context` value at
+runtime. Local permission requires that value to be `dev`. A shareable
+Deploy Preview therefore requires `DEMO_MODE_PREVIEW=1`, scoped to **Functions**
+and **Deploy Previews only**, and a runtime deploy context of `deploy-preview`.
 
 ## Goals / Non-Goals
 
@@ -40,10 +38,10 @@ available to production Functions.
 ## Decisions
 
 **Permission is separate from the request to demo.** `DEMO_MODE` requests demo
-behavior, but does not authorize it. Local `netlify dev` is permitted by
-`NETLIFY_DEV=true`. A deployed demo is permitted only when
-`DEMO_MODE_PREVIEW=1` and `DEMO_DEPLOY_CONTEXT=deploy-preview` are available to
-the Function from a Netlify Deploy Preview scope. These settings are server-side;
+behavior, but does not authorize it. Local `netlify dev` is permitted only when
+Netlify's runtime deploy context is `dev`. A deployed demo is permitted only when
+`DEMO_MODE_PREVIEW=1` is available to the Function and Netlify's platform-owned
+runtime deploy context is `deploy-preview`. These values are server-side;
 request headers and query parameters cannot grant demo access. They must not be
 configured for production.
 
@@ -61,9 +59,9 @@ When `DEMO_MODE` is off, the existing password-protected real path is unchanged.
 **Demo mode skips the password rather than shipping a demo password.** There is
 nothing behind the gate but fixtures, and a documented shared demo password is worse
 than none: it trains contributors to expect a password that works, and it is exactly
-the kind of string that gets pasted into a real Netlify variable. The frontend needs
-no change — its unlock screen calls `GET /api/tasks`, which succeeds in demo mode,
-so any typed password unlocks the portal. The README says so plainly.
+the kind of string that gets pasted into a real Netlify variable. The frontend probes
+`GET /api/tasks` on startup; an authorized demo succeeds without a password, while a
+normal `401` shows the unlock screen without a premature incorrect-password error.
 
 **Validation still runs.** Demo mode branches after `readJsonObject` and
 `validateTaskInput`, not before. A contributor working on validation, or on the
@@ -93,7 +91,8 @@ Blobs — would make deployed demos writable, at the cost of a production depend
 and an unbounded public write surface, for a feature whose main job is local
 onboarding.
 
-`NETLIFY_DEV` is the signal for "local". This was checked rather than assumed:
+`NETLIFY_DEV` is used only to decide whether demo writes can use the local scratch
+file; it does not authorize demo mode. This was checked rather than assumed:
 a function under `netlify dev` sets `AWS_LAMBDA_FUNCTION_NAME` and
 `LAMBDA_TASK_ROOT` exactly as a deployed one does, so neither distinguishes them.
 
@@ -109,10 +108,10 @@ lose one task; for one person clicking a form that does not justify a lock file.
 - **Demo mode is unauthenticated by design.** Deploy Preview permission is therefore
   intentionally limited to Netlify Functions in Deploy Preview context. Such
   previews serve fictional fixtures only and remain read-only.
-- **Preview safety depends on Netlify variable scope.** A maintainer must verify
-  that `DEMO_MODE_PREVIEW` and `DEMO_DEPLOY_CONTEXT` are scoped to Functions and
-  Deploy Previews only and absent from production. Until both are verified on a
-  real Deploy Preview, preview demo mode must remain disabled.
+- **Preview permission still depends on Netlify variable scope.** A maintainer must verify
+  that `DEMO_MODE_PREVIEW` is scoped to Functions and Deploy Previews only. The
+  application independently requires Netlify's runtime deploy context to identify
+  a Deploy Preview, so broad variable scoping cannot authorize production demo mode.
 - **Fixtures drift.** If the Sheet's column layout changes, the fixture file is a
   second place to update. `task-registry`'s spec is the shared reference for both.
 - **`portal-access` is not yet in the main specs.** Its requirements live in the

@@ -1,15 +1,20 @@
 import Card from '../components/Card';
 import TaskCard from '../components/TaskCard';
-import { isDemoMode } from '../demoMode';
 import type { Task } from '../types';
 
 interface EventsPageProps {
+  demoMode: boolean;
   listMessage: string;
   onCreateEvent: () => void;
   tasks: Task[];
 }
 
-export default function EventsPage({ listMessage, onCreateEvent, tasks }: EventsPageProps) {
+export default function EventsPage({
+  demoMode,
+  listMessage,
+  onCreateEvent,
+  tasks,
+}: EventsPageProps) {
   return (
     <main className="mx-auto w-[min(100%-2rem,760px)] py-12 pb-[72px] max-[600px]:pt-[22px]">
       <section className="relative mb-5 overflow-hidden rounded-[18px] bg-primary-dark p-[38px] text-hero-heading max-[600px]:rounded-[14px] max-[600px]:p-[22px]">
@@ -44,9 +49,9 @@ export default function EventsPage({ listMessage, onCreateEvent, tasks }: Events
             Create an event
           </button>
         </div>
-        {isDemoMode && (
+        {demoMode && (
           <p className="text-sm leading-relaxed text-muted">
-            Demo mode is available locally for testing without real integrations.
+            Demo mode is using fictional data without real integrations.
           </p>
         )}
       </Card>

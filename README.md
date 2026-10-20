@@ -94,7 +94,6 @@ wds-ops-portal/
 │   ├── api.ts                # Typed API and session-password helpers
 │   ├── components/
 │   │   └── TaskCard.tsx       # Reusable task summary
-│   ├── demoMode.ts           # Build-time demo-mode flag for page messaging
 │   ├── main.tsx              # React entry point
 │   ├── pages/
 │   │   ├── EventsPage.tsx     # Event list and dashboard
@@ -178,8 +177,7 @@ cp .env.example .env          # ships with DEMO_MODE=1 already set
 npm run dev                   # http://localhost:8888
 ```
 
-Open the portal and type **any password** — demo mode has nothing behind the gate,
-so the unlock screen accepts whatever you enter. You will see five fictional events
+Open the portal; authorized demo mode loads without asking for a password. You will see five fictional events
 from [`fixtures/tasks.demo.json`](fixtures/tasks.demo.json), and you can create more.
 
 In demo mode nothing leaves your machine: no Google Sheet is read or written, no
@@ -195,12 +193,11 @@ To run against real Google credentials instead, set `DEMO_MODE=0` in `.env` and 
 in the rest, then follow the procedure below.
 
 Demo mode is enabled only for local Netlify Dev by default. A Deploy Preview can
-serve fixtures only when `DEMO_MODE_PREVIEW=1` and
-`DEMO_DEPLOY_CONTEXT=deploy-preview` are configured for the Functions scope in
-Deploy Preview contexts only. Do not configure either value for production.
-Missing permission or runtime marker fails closed with 503. The marker is custom
-because Netlify's built-in `CONTEXT` is build metadata and is not available to
-deployed Functions.
+serve fixtures only when `DEMO_MODE_PREVIEW=1` is configured for the Functions
+scope in Deploy Preview contexts and Netlify's runtime deploy context is
+`deploy-preview`. Missing permission or runtime context fails closed with 503.
+The platform-provided context prevents broadly scoped variables from authorizing
+demo mode in production.
 
 ---
 

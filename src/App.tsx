@@ -11,6 +11,7 @@ export default function App() {
   const navigate = useNavigate();
   const [view, setView] = useState<PortalView>('checking');
   const [gateError, setGateError] = useState('');
+  const [demoMode, setDemoMode] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [listMessage, setListMessage] = useState('Loading tasks…');
   const initialSessionCheck = useRef<Promise<LoadTasksResult> | null>(null);
@@ -31,6 +32,7 @@ export default function App() {
     try {
       const { response, data } = await getTasks(passwordOverride);
       if (response.status === 401) {
+        setDemoMode(false);
         setTasks([]);
         setListMessage('');
         return { kind: 'unauthorized', message: 'Incorrect password.' };
@@ -38,16 +40,19 @@ export default function App() {
       if (!response.ok || data?.status !== 'success') {
         const message = data?.message ?? 'Error loading task database.';
         setTasks([]);
+        setDemoMode(false);
         setListMessage(message);
         return { kind: 'server-error', message };
       }
       const newestFirst = [...(data.tasks ?? [])].reverse();
+      setDemoMode(data.demoMode === true);
       setTasks(newestFirst);
       setListMessage(newestFirst.length ? '' : 'No tasks created yet.');
       return { kind: 'success' };
     } catch {
       const message = 'Could not reach the portal. Check your connection and try again.';
       setTasks([]);
+      setDemoMode(false);
       setListMessage(message);
       return { kind: 'network-error', message };
     }
@@ -62,7 +67,7 @@ export default function App() {
       if (result.kind === 'success') {
         setView('portal');
       } else if (result.kind === 'unauthorized') {
-        lock(result.message);
+        lock(password ? result.message : '');
       } else {
         showGateError(result.message);
       }
@@ -111,6 +116,7 @@ export default function App() {
         element={
           <ProtectedRoute view={view}>
             <EventsPage
+              demoMode={demoMode}
               listMessage={listMessage}
               onCreateEvent={() => navigate('/create-task')}
               tasks={tasks}
@@ -123,6 +129,7 @@ export default function App() {
         element={
           <ProtectedRoute view={view}>
             <TaskCreatePage
+              demoMode={demoMode}
               onEventCreated={() => loadTasks()}
               onSessionExpired={handleSessionExpired}
             />

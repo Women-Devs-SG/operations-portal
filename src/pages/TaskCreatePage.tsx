@@ -5,10 +5,10 @@ import { createTask } from '../api';
 import Card from '../components/Card';
 import PrimaryButton from '../components/PrimaryButton';
 import TextInput from '../components/TextInput';
-import { isDemoMode } from '../demoMode';
 import type { FormStatus, LoadTasksResult, TaskInput } from '../types';
 
 interface TaskCreatePageProps {
+  demoMode: boolean;
   onEventCreated: () => Promise<LoadTasksResult>;
   onSessionExpired: () => void;
 }
@@ -21,7 +21,11 @@ const emptyInput: TaskInput = {
   eventOneLiner: '',
 };
 
-export default function TaskCreatePage({ onEventCreated, onSessionExpired }: TaskCreatePageProps) {
+export default function TaskCreatePage({
+  demoMode,
+  onEventCreated,
+  onSessionExpired,
+}: TaskCreatePageProps) {
   const navigate = useNavigate();
   const [input, setInput] = useState<TaskInput>(emptyInput);
   const [status, setStatus] = useState<FormStatus>(null);
@@ -91,7 +95,7 @@ export default function TaskCreatePage({ onEventCreated, onSessionExpired }: Tas
           </button>
         </div>
 
-        {isDemoMode && (
+        {demoMode && (
           <p className="mb-6 text-sm leading-relaxed text-muted">
             Demo mode is available in local development and authorised Netlify Deploy Previews. It
             does not call Google Sheets, Drive, or Telegram.

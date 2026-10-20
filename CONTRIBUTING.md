@@ -18,7 +18,7 @@ cp .env.example .env          # DEMO_MODE=1 is already set
 npm run dev                   # http://localhost:8888
 ```
 
-Type any password at the unlock screen. You get five fictional events from
+The authorized local demo loads without a password. You get five fictional events from
 [`fixtures/tasks.demo.json`](fixtures/tasks.demo.json) and can create more. No Google
 or Telegram call is made. Tasks you create land in `wds-portal-demo-tasks.json` in
 your system temp directory — the two endpoints are separate functions and cannot

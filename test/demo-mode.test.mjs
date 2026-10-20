@@ -37,6 +37,8 @@ function makeRequest(path, { method = 'GET', headers = {}, body } = {}) {
   });
 }
 
+const deployContext = (context) => ({ deploy: { context } });
+
 async function readBody(response) {
   return response.json();
 }
@@ -63,10 +65,11 @@ test('demo is disabled by default and for explicit false values', async () => {
 
 test('local Netlify Dev explicitly permits fixture-backed requests', async () => {
   await withEnvironment({ DEMO_MODE: '1', NETLIFY_DEV: 'true' }, async () => {
-    const response = await listTasks(makeRequest('/api/tasks'));
+    const response = await listTasks(makeRequest('/api/tasks'), deployContext('dev'));
     const body = await readBody(response);
     assert.equal(response.status, 200);
     assert.equal(body.status, 'success');
+    assert.equal(body.demoMode, true);
     assert.ok(body.tasks.length > 0);
   });
 });
@@ -76,13 +79,13 @@ test('Deploy Preview requires the explicit server-side permission', async () => 
     {
       DEMO_MODE: '1',
       DEMO_MODE_PREVIEW: '1',
-      DEMO_DEPLOY_CONTEXT: 'deploy-preview',
     },
     async () => {
-      const response = await listTasks(makeRequest('/api/tasks'));
+      const response = await listTasks(makeRequest('/api/tasks'), deployContext('deploy-preview'));
       const body = await readBody(response);
       assert.equal(response.status, 200);
       assert.equal(body.status, 'success');
+      assert.equal(body.demoMode, true);
       assert.ok(body.tasks.length > 0);
     },
   );
@@ -124,22 +127,23 @@ test('preview permission without the runtime preview marker still refuses demo',
   });
 });
 
-test('production refuses demo even with explicit preview and local flags', async () => {
+test('production refuses demo even when preview variables leak into production', async () => {
   await withEnvironment(
     {
       DEMO_MODE: '1',
       DEMO_MODE_PREVIEW: '1',
-      DEMO_DEPLOY_CONTEXT: 'production',
+      DEMO_DEPLOY_CONTEXT: 'deploy-preview',
       NETLIFY_DEV: 'true',
     },
     async () => {
-      const tasksResponse = await listTasks(makeRequest('/api/tasks'));
+      const tasksResponse = await listTasks(makeRequest('/api/tasks'), deployContext('production'));
       const createResponse = await createTask(
         makeRequest('/api/create-task', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: '{}',
         }),
+        deployContext('production'),
       );
       assert.equal(tasksResponse.status, 503);
       assert.equal(createResponse.status, 503);
@@ -148,14 +152,15 @@ test('production refuses demo even with explicit preview and local flags', async
 });
 
 test('explicit production with no preview authorization refuses demo', async () => {
-  await withEnvironment({ DEMO_MODE: '1', DEMO_DEPLOY_CONTEXT: 'production' }, async () => {
-    const tasksResponse = await listTasks(makeRequest('/api/tasks'));
+  await withEnvironment({ DEMO_MODE: '1' }, async () => {
+    const tasksResponse = await listTasks(makeRequest('/api/tasks'), deployContext('production'));
     const createResponse = await createTask(
       makeRequest('/api/create-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{}',
       }),
+      deployContext('production'),
     );
 
     assert.equal(tasksResponse.status, 503);
@@ -173,10 +178,9 @@ test('invalid demo and preview settings fail closed', async () => {
     {
       DEMO_MODE: '1',
       DEMO_MODE_PREVIEW: 'true',
-      DEMO_DEPLOY_CONTEXT: 'deploy-preview',
     },
     async () => {
-      const response = await listTasks(makeRequest('/api/tasks'));
+      const response = await listTasks(makeRequest('/api/tasks'), deployContext('deploy-preview'));
       assert.equal(response.status, 503);
     },
   );
@@ -185,17 +189,16 @@ test('invalid demo and preview settings fail closed', async () => {
     {
       DEMO_MODE: '1',
       DEMO_MODE_PREVIEW: '1',
-      DEMO_DEPLOY_CONTEXT: 'branch-deploy',
     },
     async () => {
-      const response = await listTasks(makeRequest('/api/tasks'));
+      const response = await listTasks(makeRequest('/api/tasks'), deployContext('branch-deploy'));
       assert.equal(response.status, 503);
     },
   );
 });
 
 test('client-controlled values cannot grant preview demo permission', async () => {
-  await withEnvironment({ DEMO_MODE: '1', DEMO_DEPLOY_CONTEXT: 'deploy-preview' }, async () => {
+  await withEnvironment({ DEMO_MODE: '1' }, async () => {
     const response = await listTasks(
       makeRequest('/api/tasks?DEMO_MODE_PREVIEW=1', {
         headers: { 'X-Demo-Mode-Preview': '1' },
@@ -241,7 +244,6 @@ test('preview demo serves fixtures and clearly refuses writes', async () => {
     {
       DEMO_MODE: '1',
       DEMO_MODE_PREVIEW: '1',
-      DEMO_DEPLOY_CONTEXT: 'deploy-preview',
     },
     async () => {
       const response = await createTask(
@@ -250,6 +252,7 @@ test('preview demo serves fixtures and clearly refuses writes', async () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ taskName: 'Fictional test event' }),
         }),
+        deployContext('deploy-preview'),
       );
       const body = await readBody(response);
       assert.equal(response.status, 200);

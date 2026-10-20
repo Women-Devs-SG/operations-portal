@@ -5,10 +5,10 @@ import { notifyTaskCreated } from '../../lib/telegram.mjs';
 import { validateTaskInput } from '../../lib/validate.mjs';
 import { json, methodNotAllowed, readJsonObject, serverError } from '../../lib/http.mjs';
 
-export default async function handler(req) {
+export default async function handler(req, context) {
   if (req.method !== 'POST') return methodNotAllowed('POST');
 
-  const demo = demoStatus();
+  const demo = demoStatus(context);
   if (demo.refusal) return demo.refusal;
 
   if (!demo.active) {

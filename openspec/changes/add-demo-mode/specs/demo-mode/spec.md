@@ -16,15 +16,15 @@ when its permission is missing, invalid, or ambiguous.
 #### Scenario: Local demo mode enabled
 
 - **WHEN** `DEMO_MODE` is set to `1` or `true` and the function runs under
-  `netlify dev` with `NETLIFY_DEV=true`
+  `netlify dev` with a runtime deploy context of `dev`
 - **THEN** both endpoints answer from the fixture-backed store
 - **AND** no Sheets, Drive, or Telegram request is issued
 
 #### Scenario: Explicitly permitted Deploy Preview
 
 - **WHEN** `DEMO_MODE` is set to `1` or `true`, the server-side
-  `DEMO_MODE_PREVIEW=1` permission and custom
-  `DEMO_DEPLOY_CONTEXT=deploy-preview` marker are available to the Function
+  `DEMO_MODE_PREVIEW=1` permission is available to the Function and Netlify's
+  runtime deploy context is `deploy-preview`
 - **THEN** both endpoints answer from the fixture-backed store
 - **AND** no Sheets, Drive, or Telegram request is issued
 - **AND** the deployed demo is read-only
@@ -38,8 +38,8 @@ when its permission is missing, invalid, or ambiguous.
 #### Scenario: Demo requested without a permitted runtime
 
 - **WHEN** `DEMO_MODE` is truthy and the runtime is not local Netlify Dev
-- **AND** either `DEMO_MODE_PREVIEW` is not `1` or `DEMO_DEPLOY_CONTEXT` is not
-  `deploy-preview` (absent or unrecognized)
+- **AND** either `DEMO_MODE_PREVIEW` is not `1` or Netlify's runtime deploy context
+  is not `deploy-preview` (absent or another context)
 - **THEN** both endpoints return `503` naming the demo configuration
 - **AND** neither endpoint serves fixtures or contacts Google or Telegram
 
@@ -59,7 +59,7 @@ when its permission is missing, invalid, or ambiguous.
 
 The system SHALL refuse to serve any request when `DEMO_MODE` is truthy in an
 explicit production context. Outside local Netlify Dev, it SHALL refuse demo
-mode whenever the custom runtime marker is unavailable or not `deploy-preview`,
+mode whenever the platform runtime context is unavailable or not `deploy-preview`,
 even if `DEMO_MODE_PREVIEW=1` is set. Client-provided headers, query
 parameters, or body fields SHALL NOT grant demo permission.
 
@@ -73,8 +73,8 @@ parameters, or body fields SHALL NOT grant demo permission.
 
 #### Scenario: Missing runtime marker does not authorize demo mode
 
-- **WHEN** `DEMO_MODE` is truthy and `DEMO_DEPLOY_CONTEXT` is unavailable
-- **AND** `NETLIFY_DEV` is not `true`
+- **WHEN** `DEMO_MODE` is truthy and Netlify's runtime deploy context is unavailable
+- **AND** the runtime deploy context is not `dev`
 - **THEN** every request receives `503`, even if `DEMO_MODE_PREVIEW=1` is set
 
 #### Scenario: Client input cannot enable preview demo mode
@@ -97,9 +97,9 @@ other path.
 
 #### Scenario: Unlock screen in demo mode
 
-- **WHEN** an operator submits any password on the unlock screen in demo mode
-- **THEN** the listing request succeeds and the portal unlocks, because there is
-  nothing behind the gate but fixtures
+- **WHEN** the frontend starts without a stored password in authorized demo mode
+- **THEN** the listing request succeeds and the portal opens without showing the
+  unlock form, because there is nothing behind the gate but fixtures
 
 #### Scenario: Real path is unchanged
 
@@ -200,9 +200,18 @@ never appear.
 
 The system SHALL log a warning on every demo-mode request, so a maintainer who
 leaves `DEMO_MODE` enabled beside real credentials can see why the portal is showing
-unfamiliar data.
+unfamiliar data. Successful task-list responses SHALL include a boolean `demoMode`
+field, and the frontend SHALL show demo notices only when that backend-confirmed
+field is `true`.
 
 #### Scenario: Demo request is logged
 
 - **WHEN** any request is served in demo mode
 - **THEN** a warning naming `DEMO_MODE` is written to the server log
+
+#### Scenario: Frontend uses authoritative demo status
+
+- **WHEN** `GET /api/tasks` succeeds
+- **THEN** its response includes `demoMode: true` for an authorized demo and
+  `demoMode: false` for the authenticated real-data path
+- **AND** the frontend does not infer demo mode from build-time environment values
