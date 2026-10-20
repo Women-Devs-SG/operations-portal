@@ -11,7 +11,7 @@
     "dev": "netlify dev",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node --test test/demo-mode.test.mjs",
+    "test": "node --test test/*.test.mjs",
     "audit": "npm audit --omit=dev",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

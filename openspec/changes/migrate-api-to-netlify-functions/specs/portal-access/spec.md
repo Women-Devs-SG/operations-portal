@@ -120,3 +120,15 @@ unconfigured one by probing methods.
 - **WHEN** an endpoint is called with an unsupported method and no password header
 - **THEN** the system responds `405` with an `Allow` header naming the supported
   method
+
+### Requirement: Unknown API Routes Return JSON Not Found
+
+The system SHALL keep unknown `/api/*` paths out of the single-page application
+fallback and return a non-cacheable JSON `404` response.
+
+#### Scenario: Unknown API path
+
+- **WHEN** a caller requests an `/api/*` path other than a declared endpoint
+- **THEN** the response status is `404` with `Content-Type: application/json`
+- **AND** the response carries `Cache-Control: no-store`
+- **AND** the SPA HTML is not returned
