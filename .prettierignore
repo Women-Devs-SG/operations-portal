@@ -2,16 +2,3 @@ node_modules/
 dist/
 .netlify/
 coverage/
-
-# Untracked, unrelated projects present only in this shared local workspace.
-KiroCrew/
-api/
-apps/
-docs/
-packages/
-public/
-supabase/
-app.js
-server.js
-ISSUES.md
-.github/ISSUE_TEMPLATE/
