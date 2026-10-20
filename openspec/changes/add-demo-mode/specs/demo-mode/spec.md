@@ -162,13 +162,18 @@ never appear.
   after the committed fixtures
 - **AND** the response says the task was saved to the local demo only
 
-#### Scenario: Task created in a deployed demo
+#### Scenario: Task created in an authorized Deploy Preview demo
 
-- **WHEN** a task is submitted in demo mode on a deployed site, such as a branch or
-  preview deploy
+- **WHEN** a task is submitted in demo mode on an authorized Deploy Preview
 - **THEN** the response reports that the demo is read-only and the task was not
   added to the list
 - **AND** nothing is written anywhere
+
+#### Scenario: Task submitted on a branch deploy
+
+- **WHEN** `DEMO_MODE` is truthy and a task is submitted on a branch deploy
+- **THEN** the request receives `503` before the demo handler runs
+- **AND** no task is created and no external integration is called
 
 #### Scenario: The two endpoints are separate functions
 

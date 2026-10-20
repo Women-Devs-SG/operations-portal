@@ -8,7 +8,9 @@ Functions in `netlify/functions/`. There is no long-running server.
 | `/api/create-task` | `netlify/functions/create-task.mjs` | POST   |
 | `/api/tasks`       | `netlify/functions/tasks.mjs`       | GET    |
 
-Both require the shared portal password in an `X-Portal-Password` header.
+In real mode, both require the shared portal password in an
+`X-Portal-Password` header. Authorized local and Deploy Preview demo requests
+do not require that header.
 
 ## 1. Generate a portal password
 
@@ -16,8 +18,10 @@ Both require the shared portal password in an `X-Portal-Password` header.
 node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 ```
 
-The API returns 503 to every request if it is unset or invalid, so the portal
-can never accidentally run unprotected.
+On the real-data path, `requirePassword` returns `503` when `PORTAL_PASSWORD`
+is unset or empty. A missing or incorrect `X-Portal-Password` value returns
+`401`. Authorized demo requests bypass this password check and cannot access
+the real integrations.
 
 ## 2. Set environment variables in Netlify
 

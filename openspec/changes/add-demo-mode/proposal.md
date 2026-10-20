@@ -17,8 +17,9 @@ name, or a real Drive link on screen.
 ## What Changes
 
 - Add a demo mode that serves a fixed set of fictional tasks from a committed
-  fixture file and accepts new ones into an in-memory list, making no Google or
-  Telegram calls whatsoever.
+  fixture file and, in local development, persists new ones to a scratch file
+  shared by the separate `create-task` and `tasks` functions. Deployed demos are
+  read-only, and demo mode makes no Google or Telegram calls whatsoever.
 - Activate it only from an explicit `DEMO_MODE` environment variable and only in
   permitted runtimes: local `netlify dev`, or a Deploy Preview with
   `DEMO_MODE_PREVIEW=1` scoped to Functions for Deploy Previews and Netlify's

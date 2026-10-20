@@ -244,7 +244,11 @@ volunteer data.
 
 ### `POST /api/create-task`
 
-Executes full automation sequence (Drive creation, template copy, GSheet log, Telegram notification).
+In real mode, executes the full automation sequence: Drive creation, template
+copy, Google Sheets logging, and Telegram notification. In authorized demo mode,
+the endpoint applies the same input validation without making external calls.
+Local demo submissions are added to the scratch-file store; Deploy Preview demos
+are read-only and report that the task was not stored.
 
 - **Request Body (`application/json`):**
 
@@ -270,7 +274,10 @@ Executes full automation sequence (Drive creation, template copy, GSheet log, Te
 
 ### `GET /api/tasks`
 
-Retrieves logged task entries from the `Tasks` sheet tab.
+In real mode, retrieves logged task entries from the `Tasks` sheet tab. In
+authorized demo mode, it returns committed fictional fixtures plus tasks from the
+local scratch-file store when running under Netlify Dev. Deploy Preview demos
+return the fixtures only.
 
 - **Response (`200 OK`):**
   ```json
