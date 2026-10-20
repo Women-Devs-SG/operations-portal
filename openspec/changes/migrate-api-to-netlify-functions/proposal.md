@@ -30,7 +30,7 @@ Express as written; picking the runtime and closing the auth hole are one decisi
 ## What Changes
 
 - Add server-side shared-password authentication in front of both endpoints,
-  failing closed when the password is unset or shorter than 12 characters.
+  failing closed when the password is unset or empty.
 - Reimplement `POST /api/create-task` and `GET /api/tasks` as Netlify Functions at
   the same URLs, wiring in the `lib/` helpers.
 - Enforce type, length, URL-scheme, and date-format validation on every field, and
@@ -80,7 +80,7 @@ Express as written; picking the runtime and closing the auth hole are one decisi
   replaced by `netlify dev`), `.gitignore`, `.env.example`, `DEPLOYMENT.md`,
   `README.md`.
 - **Configuration**: `PORTAL_PASSWORD` becomes a required environment variable —
-  the deployment refuses requests until it is set to at least 12 characters.
+  the deployment refuses requests until it is set to a non-empty value.
 - **Unaffected**: `public/index.html` and `public/app.js` need no change; they
   already speak this protocol and load no third-party resources, which is what
   makes the strict CSP possible.

@@ -1,15 +1,16 @@
 # Netlify Deployment Guide
 
-The portal is a static frontend in `public/` plus two Netlify Functions in
-`netlify/functions/`. There is no long-running server — Netlify does not run
-one, so the previous Express `server.js` has been replaced.
+The portal is a React + TypeScript frontend built into `dist/`, plus two Netlify
+Functions in `netlify/functions/`. There is no long-running server.
 
-| Path | Function | Method |
-| --- | --- | --- |
-| `/api/create-task` | `netlify/functions/create-task.mjs` | POST |
-| `/api/tasks` | `netlify/functions/tasks.mjs` | GET |
+| Path               | Function                            | Method |
+| ------------------ | ----------------------------------- | ------ |
+| `/api/create-task` | `netlify/functions/create-task.mjs` | POST   |
+| `/api/tasks`       | `netlify/functions/tasks.mjs`       | GET    |
 
-Both require the shared portal password in an `X-Portal-Password` header.
+In real mode, both require the shared portal password in an
+`X-Portal-Password` header. Authorized local and Deploy Preview demo requests
+do not require that header.
 
 ## 1. Generate a portal password
 
@@ -17,62 +18,61 @@ Both require the shared portal password in an `X-Portal-Password` header.
 node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 ```
 
-Must be at least 12 characters. The API returns 503 to every request if it is
-unset or shorter, so the portal can never accidentally run unprotected.
+On the real-data path, `requirePassword` returns `503` when `PORTAL_PASSWORD`
+is unset or empty. A missing or incorrect `X-Portal-Password` value returns
+`401`. Authorized demo requests bypass this password check and cannot access
+the real integrations.
 
 ## 2. Set environment variables in Netlify
 
 **Site configuration → Environment variables.** Never commit these.
 
-| Variable | Notes |
-| --- | --- |
-| `PORTAL_PASSWORD` | From step 1. Share with the team out of band. |
-| `GOOGLE_CLIENT_EMAIL` | Service account email. |
-| `GOOGLE_PRIVATE_KEY` | Paste the whole key including `-----BEGIN PRIVATE KEY-----`. Netlify preserves `\n` escapes; the code converts them. |
-| `GOOGLE_SHEET_ID` | Target spreadsheet. |
-| `GOOGLE_DRIVE_PARENT_FOLDER_ID` | Parent folder for new project folders. |
-| `WDS_INTRO_DOC_ID` | Optional. Intro slides to copy. |
-| `TELEGRAM_BOT_TOKEN` | Optional. Omit to disable notifications. |
-| `TELEGRAM_CHAT_ID` | Optional. |
+| Variable                        | Notes                                                                                                                |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `PORTAL_PASSWORD`               | From step 1. Share with the team out of band.                                                                        |
+| `GOOGLE_CLIENT_EMAIL`           | Service account email.                                                                                               |
+| `GOOGLE_PRIVATE_KEY`            | Paste the whole key including `-----BEGIN PRIVATE KEY-----`. Netlify preserves `\n` escapes; the code converts them. |
+| `GOOGLE_SHEET_ID`               | Target spreadsheet.                                                                                                  |
+| `GOOGLE_DRIVE_PARENT_FOLDER_ID` | Parent folder for new project folders.                                                                               |
+| `WDS_INTRO_DOC_ID`              | Optional. Intro slides to copy.                                                                                      |
+| `TELEGRAM_BOT_TOKEN`            | Optional. Omit to disable notifications.                                                                             |
+| `TELEGRAM_CHAT_ID`              | Optional.                                                                                                            |
 
 Scope them to **all deploy contexts**, or production only if you do not want
 deploy previews touching the live Sheet. Deploy previews get public URLs, so
 prefer scoping secrets to production only.
 
-> ⚠️ **Never set `DEMO_MODE` in the production context.** It switches the API over
-> to the fictional fixtures in `fixtures/tasks.demo.json` and drops the password
-> check, so both functions refuse every request with `503` if they find it set in
-> production. That is deliberate: showing volunteers fake data silently would be
-> worse than an outage. It is safe in a branch or deploy-preview context if you
-> ever want a shareable demo, and useful there: a preview with `DEMO_MODE=1` needs
-> no Google credentials at all. Such a demo is read-only — creating a task reports
-> that and changes nothing — because each deployed function has its own container.
-> See [CONTRIBUTING.md](CONTRIBUTING.md).
+> ⚠️ Demo mode is disabled on deployed functions unless explicitly authorized.
+> Never set preview demo variables in production. A shareable Deploy Preview
+> requires `DEMO_MODE=1` and `DEMO_MODE_PREVIEW=1`, configured through the Netlify
+> UI/API with **Functions** scope and **Deploy Previews only**. The Functions also
+> require Netlify's platform-provided runtime deploy context to be `deploy-preview`,
+> so accidentally broad variable scoping cannot authorize demo mode in production.
+> Authorized preview demos use fictional fixtures, need no
+> Google credentials, and are read-only because each function has its own
+> container. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 3. Deploy
 
 Connect the GitHub repo at <https://app.netlify.com/start>. `netlify.toml`
 already sets everything:
 
-- publish directory: `public`
-- functions directory: `netlify/functions`
-- Node version: 22
+Node version: 22.22.0 (also pinned in `.nvmrc`)
 
-No build command is needed. Netlify installs dependencies and bundles the
-functions automatically.
+Netlify installs dependencies, runs the Vite build, and bundles the functions
+automatically.
 
 ## 4. Local development
 
 ```powershell
 npm install
-npm install -g netlify-cli   # once
 cp .env.example .env         # then fill it in
 npm run dev                  # http://localhost:8888
 ```
 
-`netlify dev` serves `public/`, runs the functions, and applies the `/api/*`
-rewrites, so local behaviour matches production. Plain `npm start` no longer
-exists — the Express server it depended on has been removed.
+`netlify dev` runs the Vite frontend and functions together and applies the
+`/api/*` rewrites, so local behaviour matches production. Always use
+`npm run dev`; the frontend-only Vite server cannot reach the local API.
 
 ## 5. Security notes
 

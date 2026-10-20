@@ -3,10 +3,10 @@ import { demoStatus, listDemoTasks } from '../../lib/demo.mjs';
 import { getGoogleClients } from '../../lib/google.mjs';
 import { json, methodNotAllowed, serverError } from '../../lib/http.mjs';
 
-export default async function handler(req) {
+export default async function handler(req, context) {
   if (req.method !== 'GET') return methodNotAllowed('GET');
 
-  const demo = demoStatus();
+  const demo = demoStatus(context);
   if (demo.refusal) return demo.refusal;
 
   if (!demo.active) {
@@ -14,7 +14,9 @@ export default async function handler(req) {
     if (unauthorized) return unauthorized;
   }
 
-  if (demo.active) return json(200, { status: 'success', tasks: listDemoTasks() });
+  if (demo.active) {
+    return json(200, { status: 'success', demoMode: true, tasks: listDemoTasks() });
+  }
 
   let sheets;
   try {
@@ -44,7 +46,7 @@ export default async function handler(req) {
         eventOneLiner: row[8] || '',
       }));
 
-    return json(200, { status: 'success', tasks });
+    return json(200, { status: 'success', demoMode: false, tasks });
   } catch (error) {
     // The previous version returned 200 with an empty list here, which made a
     // broken Sheets connection look identical to "no tasks yet".

@@ -17,11 +17,16 @@ name, or a real Drive link on screen.
 ## What Changes
 
 - Add a demo mode that serves a fixed set of fictional tasks from a committed
-  fixture file and accepts new ones into an in-memory list, making no Google or
-  Telegram calls whatsoever.
-- Activate it only from an explicit `DEMO_MODE` environment variable, and refuse to
-  serve at all if that variable is ever set in Netlify's `production` context, so it
-  cannot be switched on for the live internal site.
+  fixture file and, in local development, persists new ones to a scratch file
+  shared by the separate `create-task` and `tasks` functions. Deployed demos are
+  read-only, and demo mode makes no Google or Telegram calls whatsoever.
+- Activate it only from an explicit `DEMO_MODE` environment variable and only in
+  permitted runtimes: local `netlify dev`, or a Deploy Preview with
+  `DEMO_MODE_PREVIEW=1` scoped to Functions for Deploy Previews and Netlify's
+  platform-provided runtime deploy context equal to `deploy-preview`.
+- Refuse demo requests in explicit production context, for invalid configuration,
+  or when no permitted runtime authorization is present. Do not rely on `CONTEXT`
+  being available in a Function invocation.
 - Skip the shared-password check while demo mode is active — there is nothing behind
   it to protect — and keep validation, method handling, and response shapes
   identical to the real thing, so what a contributor exercises is the real contract.
@@ -44,8 +49,8 @@ name, or a real Drive link on screen.
 - **Changed**: `netlify/functions/create-task.mjs` and `netlify/functions/tasks.mjs`
   gain a demo branch ahead of the password check; `.env.example` documents
   `DEMO_MODE`; `README.md` gains a no-credentials quick start.
-- **Configuration**: `DEMO_MODE` is new and optional. It MUST NOT be set in the
-  Netlify production context; doing so takes the site down by design rather than
-  quietly serving fake data to volunteers.
-- **Unaffected**: `public/` needs no change. In demo mode the unlock screen still
-  appears and any password gets in, because the listing request succeeds regardless.
+- **Configuration**: `DEMO_MODE` is optional. `DEMO_MODE_PREVIEW` is an explicit
+  server-side permission scoped to Functions in Deploy Preview contexts only;
+  Netlify's runtime deploy context independently prevents production activation.
+- **Changed**: the frontend uses the task-list response as the authoritative demo
+  state and authorized demos load without prompting for a password.

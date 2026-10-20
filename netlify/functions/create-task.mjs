@@ -5,10 +5,10 @@ import { notifyTaskCreated } from '../../lib/telegram.mjs';
 import { validateTaskInput } from '../../lib/validate.mjs';
 import { json, methodNotAllowed, readJsonObject, serverError } from '../../lib/http.mjs';
 
-export default async function handler(req) {
+export default async function handler(req, context) {
   if (req.method !== 'POST') return methodNotAllowed('POST');
 
-  const demo = demoStatus();
+  const demo = demoStatus(context);
   if (demo.refusal) return demo.refusal;
 
   if (!demo.active) {
@@ -89,7 +89,10 @@ export default async function handler(req) {
     });
   } catch (error) {
     console.error('create-task: sheets append failed:', error.message);
-    return json(502, { status: 'error', message: 'Could not save the task to the sheet database.' });
+    return json(502, {
+      status: 'error',
+      message: 'Could not save the task to the sheet database.',
+    });
   }
 
   // Drive and Telegram are best-effort: the task is already recorded.

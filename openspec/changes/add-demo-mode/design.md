@@ -2,25 +2,28 @@
 
 Both functions currently follow the same order: method check, `requirePassword`,
 then Google work via `getGoogleClients()`, which throws when credentials are absent.
-`lib/auth.mjs` deliberately fails closed — an unset or short `PORTAL_PASSWORD`
+`lib/auth.mjs` deliberately fails closed — an unset or empty `PORTAL_PASSWORD`
 returns `503` to everything — so a contributor with no `.env` gets a `503` before
 any handler logic runs. Demo mode has to slot in ahead of that check without
 weakening it for the real deployment.
 
-The live site is the team's internal tool. Whatever switches demo mode on must be
-incapable of switching on there, and that has to hold even if someone copies the
-whole variable set from a local `.env` into Netlify by hand.
+The live site is the team's internal tool. Demo mode must not activate just
+because `DEMO_MODE` was copied from a local `.env` into a deployed Function.
 
-Netlify sets `CONTEXT` on every function invocation — `production`,
-`deploy-preview`, `branch-deploy`, or `dev` — which gives a signal the deployment
-controls and a local contributor does not need to think about.
+Netlify Functions receive a platform-owned `context.deploy.context` value at
+runtime. Local permission requires that value to be `dev`. A shareable
+Deploy Preview therefore requires `DEMO_MODE_PREVIEW=1`, scoped to **Functions**
+and **Deploy Previews only**, and a runtime deploy context of `deploy-preview`.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
 - `cp .env.example .env && npm run dev` yields a working portal with no credentials.
-- Demo mode is structurally unreachable on the production site.
+- Demo mode is disabled by default and structurally unreachable in an explicitly
+  marked production context.
+- When the runtime marker is unavailable, deployed demo mode never activates;
+  missing configuration and missing authorization both fail closed.
 - A contributor exercising the demo exercises the real request contract: same
   validation, same status codes, same response shape.
 - No fixture resembles a real event, volunteer, or Drive link.
@@ -34,29 +37,31 @@ controls and a local contributor does not need to think about.
 
 ## Decisions
 
-**Two conditions, not three.** An earlier sketch also required Google credentials to
-be absent, so demo mode and real credentials could never coexist. That interacts
-badly with a maintainer who keeps real credentials in `.env`: with a stale
-`DEMO_MODE=1` they would get a hard refusal on a machine that was working
-yesterday. The rule is therefore just: demo mode is on when `DEMO_MODE` is truthy,
-except in the `production` context, where its presence is a fatal misconfiguration.
-Credentials sitting unused alongside it are harmless, because demo mode never calls
-Google. What covers the confusion case is a warning logged on every demo request,
-not a refusal.
+**Permission is separate from the request to demo.** `DEMO_MODE` requests demo
+behavior, but does not authorize it. Local `netlify dev` is permitted only when
+Netlify's runtime deploy context is `dev`. A deployed demo is permitted only when
+`DEMO_MODE_PREVIEW=1` is available to the Function and Netlify's platform-owned
+runtime deploy context is `deploy-preview`. These values are server-side;
+request headers and query parameters cannot grant demo access. They must not be
+configured for production.
 
-**`DEMO_MODE` in production is a `503`, not an ignore.** Silently ignoring it would
-be defensible — the site would keep working — but it would also mean the one
-variable that must never appear in production could appear there indefinitely with
-nobody noticing. Failing loudly matches how `lib/auth.mjs` already treats a missing
-password: a portal that is misconfigured should stop, not guess. The blast radius is
-a variable no deployment needs, and the error message names it directly.
+**Unknown and invalid configurations fail closed.** If `DEMO_MODE` has an
+unrecognized value, if the runtime is neither local Netlify Dev nor explicitly
+authorized for a preview, or if demo is requested in an explicit production
+context, return `503` before authentication or data access. In particular, the
+built-in build-time `CONTEXT` variable is never treated as runtime authority.
+
+**A rejected demo request never falls through to the real path.** Returning `503`
+for invalid or unauthorized demo configuration avoids both serving fixtures and
+accidentally continuing into the Google-backed path with ambiguous configuration.
+When `DEMO_MODE` is off, the existing password-protected real path is unchanged.
 
 **Demo mode skips the password rather than shipping a demo password.** There is
 nothing behind the gate but fixtures, and a documented shared demo password is worse
 than none: it trains contributors to expect a password that works, and it is exactly
-the kind of string that gets pasted into a real Netlify variable. The frontend needs
-no change — its unlock screen calls `GET /api/tasks`, which succeeds in demo mode,
-so any typed password unlocks the portal. The README says so plainly.
+the kind of string that gets pasted into a real Netlify variable. The frontend probes
+`GET /api/tasks` on startup; an authorized demo succeeds without a password, while a
+normal `401` shows the unlock screen without a premature incorrect-password error.
 
 **Validation still runs.** Demo mode branches after `readJsonObject` and
 `validateTaskInput`, not before. A contributor working on validation, or on the
@@ -86,7 +91,8 @@ Blobs — would make deployed demos writable, at the cost of a production depend
 and an unbounded public write surface, for a feature whose main job is local
 onboarding.
 
-`NETLIFY_DEV` is the signal for "local". This was checked rather than assumed:
+`NETLIFY_DEV` is used only to decide whether demo writes can use the local scratch
+file; it does not authorize demo mode. This was checked rather than assumed:
 a function under `netlify dev` sets `AWS_LAMBDA_FUNCTION_NAME` and
 `LAMBDA_TASK_ROOT` exactly as a deployed one does, so neither distinguishes them.
 
@@ -97,17 +103,15 @@ lose one task; for one person clicking a form that does not justify a lock file.
 
 ## Risks / Trade-offs
 
-- **A stale `DEMO_MODE=1` in a maintainer's `.env` shows fake data.** Mitigated by a
-  per-request warning log, not by refusing to run. Accepted: the alternative broke
-  working machines.
-- **Demo mode is unauthenticated by design.** Safe only because it is confined to
-  non-production contexts. If someone deploys a branch context with `DEMO_MODE` set,
-  that URL serves fixtures to anyone who finds it — which is the intended behaviour
-  for a demo, and leaks nothing real.
-- **The interlock trusts `CONTEXT`.** It is set by Netlify, not by the request, so a
-  caller cannot forge it; but a non-Netlify host would not set it at all, and demo
-  mode would then be reachable wherever `DEMO_MODE` is set. Netlify is the only
-  supported target, and `netlify.toml` is the deployment contract.
+- **A stale `DEMO_MODE=1` cannot authorize a deployed demo.** The request is refused
+  unless local Netlify Dev or the separately scoped preview permission is present.
+- **Demo mode is unauthenticated by design.** Deploy Preview permission is therefore
+  intentionally limited to Netlify Functions in Deploy Preview context. Such
+  previews serve fictional fixtures only and remain read-only.
+- **Preview permission still depends on Netlify variable scope.** A maintainer must verify
+  that `DEMO_MODE_PREVIEW` is scoped to Functions and Deploy Previews only. The
+  application independently requires Netlify's runtime deploy context to identify
+  a Deploy Preview, so broad variable scoping cannot authorize production demo mode.
 - **Fixtures drift.** If the Sheet's column layout changes, the fixture file is a
   second place to update. `task-registry`'s spec is the shared reference for both.
 - **`portal-access` is not yet in the main specs.** Its requirements live in the
