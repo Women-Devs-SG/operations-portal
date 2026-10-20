@@ -195,9 +195,12 @@ To run against real Google credentials instead, set `DEMO_MODE=0` in `.env` and 
 in the rest, then follow the procedure below.
 
 Demo mode is enabled only for local Netlify Dev by default. A Deploy Preview can
-serve fixtures only when `DEMO_MODE_PREVIEW=1` is configured for the Functions
-scope in Deploy Preview contexts only. Do not configure that permission for
-production. Missing runtime permission fails closed.
+serve fixtures only when `DEMO_MODE_PREVIEW=1` and
+`DEMO_DEPLOY_CONTEXT=deploy-preview` are configured for the Functions scope in
+Deploy Preview contexts only. Do not configure either value for production.
+Missing permission or runtime marker fails closed with 503. The marker is custom
+because Netlify's built-in `CONTEXT` is build metadata and is not available to
+deployed Functions.
 
 ---
 

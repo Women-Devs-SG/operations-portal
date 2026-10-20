@@ -22,8 +22,9 @@ when its permission is missing, invalid, or ambiguous.
 
 #### Scenario: Explicitly permitted Deploy Preview
 
-- **WHEN** `DEMO_MODE` is set to `1` or `true` and the server-side
-  `DEMO_MODE_PREVIEW=1` permission is available to Functions in a Deploy Preview
+- **WHEN** `DEMO_MODE` is set to `1` or `true`, the server-side
+  `DEMO_MODE_PREVIEW=1` permission and custom
+  `DEMO_DEPLOY_CONTEXT=deploy-preview` marker are available to the Function
 - **THEN** both endpoints answer from the fixture-backed store
 - **AND** no Sheets, Drive, or Telegram request is issued
 - **AND** the deployed demo is read-only
@@ -36,9 +37,9 @@ when its permission is missing, invalid, or ambiguous.
 
 #### Scenario: Demo requested without a permitted runtime
 
-- **WHEN** `DEMO_MODE` is truthy but neither local Netlify Dev nor the explicit
-  Deploy Preview permission is present
-- **AND** `CONTEXT` is absent or has an unrecognized value
+- **WHEN** `DEMO_MODE` is truthy and the runtime is not local Netlify Dev
+- **AND** either `DEMO_MODE_PREVIEW` is not `1` or `DEMO_DEPLOY_CONTEXT` is not
+  `deploy-preview` (absent or unrecognized)
 - **THEN** both endpoints return `503` naming the demo configuration
 - **AND** neither endpoint serves fixtures or contacts Google or Telegram
 
@@ -57,10 +58,10 @@ when its permission is missing, invalid, or ambiguous.
 ### Requirement: Production Interlock and Fail-Closed Permission
 
 The system SHALL refuse to serve any request when `DEMO_MODE` is truthy in an
-explicit production context. It SHALL also refuse demo mode when deployment
-context is unavailable unless a separate server-side permission explicitly
-authorizes a Deploy Preview. Client-provided headers, query parameters, or body
-fields SHALL NOT grant demo permission.
+explicit production context. Outside local Netlify Dev, it SHALL refuse demo
+mode whenever the custom runtime marker is unavailable or not `deploy-preview`,
+even if `DEMO_MODE_PREVIEW=1` is set. Client-provided headers, query
+parameters, or body fields SHALL NOT grant demo permission.
 
 #### Scenario: Demo mode set in production
 
@@ -70,12 +71,11 @@ fields SHALL NOT grant demo permission.
 - **AND** the misconfiguration is logged server-side
 - **AND** an explicit preview permission does not override production refusal
 
-#### Scenario: Missing context does not authorize demo mode
+#### Scenario: Missing runtime marker does not authorize demo mode
 
-- **WHEN** `DEMO_MODE` is truthy and `CONTEXT` is unavailable
+- **WHEN** `DEMO_MODE` is truthy and `DEMO_DEPLOY_CONTEXT` is unavailable
 - **AND** `NETLIFY_DEV` is not `true`
-- **AND** no server-side preview permission is present
-- **THEN** every request receives `503`
+- **THEN** every request receives `503`, even if `DEMO_MODE_PREVIEW=1` is set
 
 #### Scenario: Client input cannot enable preview demo mode
 

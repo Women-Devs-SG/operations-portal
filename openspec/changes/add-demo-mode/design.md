@@ -10,12 +10,12 @@ weakening it for the real deployment.
 The live site is the team's internal tool. Demo mode must not activate just
 because `DEMO_MODE` was copied from a local `.env` into a deployed Function.
 
-Netlify documents `CONTEXT` as build metadata, not as a guaranteed Function
-runtime variable. The guard therefore must not infer permission from a missing
-`CONTEXT`. Local permission comes from Netlify Dev's `NETLIFY_DEV=true`. A
-shareable Deploy Preview requires a separate `DEMO_MODE_PREVIEW=1` variable set
-through Netlify's UI/API, scoped to **Functions** and **Deploy Previews only**.
-That variable must not be available to production Functions.
+Netlify documents `CONTEXT` as build metadata and does not expose it to deployed
+Functions. Local permission comes from Netlify Dev's `NETLIFY_DEV=true`. A
+shareable Deploy Preview therefore requires both `DEMO_MODE_PREVIEW=1` and a
+custom `DEMO_DEPLOY_CONTEXT=deploy-preview` marker set through Netlify's UI/API,
+scoped to **Functions** and **Deploy Previews only**. Neither variable may be
+available to production Functions.
 
 ## Goals / Non-Goals
 
@@ -24,8 +24,8 @@ That variable must not be available to production Functions.
 - `cp .env.example .env && npm run dev` yields a working portal with no credentials.
 - Demo mode is disabled by default and structurally unreachable in an explicitly
   marked production context.
-- When deployment context is unavailable, demo mode still requires an explicit
-  permitted-runtime signal; missing configuration never enables it.
+- When the runtime marker is unavailable, deployed demo mode never activates;
+  missing configuration and missing authorization both fail closed.
 - A contributor exercising the demo exercises the real request contract: same
   validation, same status codes, same response shape.
 - No fixture resembles a real event, volunteer, or Drive link.
@@ -42,15 +42,16 @@ That variable must not be available to production Functions.
 **Permission is separate from the request to demo.** `DEMO_MODE` requests demo
 behavior, but does not authorize it. Local `netlify dev` is permitted by
 `NETLIFY_DEV=true`. A deployed demo is permitted only when
-`DEMO_MODE_PREVIEW=1` is available to the Function from a Netlify Deploy Preview
-scope. This setting is server-side; request headers and query parameters cannot
-grant demo access. It must not be configured for production.
+`DEMO_MODE_PREVIEW=1` and `DEMO_DEPLOY_CONTEXT=deploy-preview` are available to
+the Function from a Netlify Deploy Preview scope. These settings are server-side;
+request headers and query parameters cannot grant demo access. They must not be
+configured for production.
 
 **Unknown and invalid configurations fail closed.** If `DEMO_MODE` has an
 unrecognized value, if the runtime is neither local Netlify Dev nor explicitly
 authorized for a preview, or if demo is requested in an explicit production
-context, return `503` before authentication or data access. In particular,
-`CONTEXT` being absent is not evidence that the request is local or safe.
+context, return `503` before authentication or data access. In particular, the
+built-in build-time `CONTEXT` variable is never treated as runtime authority.
 
 **A rejected demo request never falls through to the real path.** Returning `503`
 for invalid or unauthorized demo configuration avoids both serving fixtures and
@@ -108,11 +109,10 @@ lose one task; for one person clicking a form that does not justify a lock file.
 - **Demo mode is unauthenticated by design.** Deploy Preview permission is therefore
   intentionally limited to Netlify Functions in Deploy Preview context. Such
   previews serve fictional fixtures only and remain read-only.
-- **Preview safety depends on Netlify variable scope.** Netlify does not document
-  `CONTEXT` as a Function runtime variable. A maintainer must verify that
-  `DEMO_MODE_PREVIEW` is scoped to Functions and Deploy Previews only, and absent
-  from production. Until that is verified on a Deploy Preview, preview demo mode
-  must remain disabled.
+- **Preview safety depends on Netlify variable scope.** A maintainer must verify
+  that `DEMO_MODE_PREVIEW` and `DEMO_DEPLOY_CONTEXT` are scoped to Functions and
+  Deploy Previews only and absent from production. Until both are verified on a
+  real Deploy Preview, preview demo mode must remain disabled.
 - **Fixtures drift.** If the Sheet's column layout changes, the fixture file is a
   second place to update. `task-registry`'s spec is the shared reference for both.
 - **`portal-access` is not yet in the main specs.** Its requirements live in the

@@ -3,7 +3,13 @@ import test from 'node:test';
 import createTask from '../netlify/functions/create-task.mjs';
 import listTasks from '../netlify/functions/tasks.mjs';
 
-const ENV_KEYS = ['DEMO_MODE', 'DEMO_MODE_PREVIEW', 'NETLIFY_DEV', 'CONTEXT', 'PORTAL_PASSWORD'];
+const ENV_KEYS = [
+  'DEMO_MODE',
+  'DEMO_MODE_PREVIEW',
+  'DEMO_DEPLOY_CONTEXT',
+  'NETLIFY_DEV',
+  'PORTAL_PASSWORD',
+];
 
 async function withEnvironment(values, run) {
   const original = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]));
@@ -67,7 +73,11 @@ test('local Netlify Dev explicitly permits fixture-backed requests', async () =>
 
 test('Deploy Preview requires the explicit server-side permission', async () => {
   await withEnvironment(
-    { DEMO_MODE: '1', CONTEXT: 'deploy-preview', DEMO_MODE_PREVIEW: '1' },
+    {
+      DEMO_MODE: '1',
+      DEMO_MODE_PREVIEW: '1',
+      DEMO_DEPLOY_CONTEXT: 'deploy-preview',
+    },
     async () => {
       const response = await listTasks(makeRequest('/api/tasks'));
       const body = await readBody(response);
@@ -78,7 +88,7 @@ test('Deploy Preview requires the explicit server-side permission', async () => 
   );
 });
 
-test('an absent CONTEXT is not enough to enable demo mode', async () => {
+test('an absent preview authorization is not enough to enable demo mode', async () => {
   await withEnvironment({ DEMO_MODE: '1' }, async () => {
     const tasksResponse = await listTasks(makeRequest('/api/tasks'));
     const createResponse = await createTask(
@@ -96,13 +106,31 @@ test('an absent CONTEXT is not enough to enable demo mode', async () => {
   });
 });
 
+test('preview permission without the runtime preview marker still refuses demo', async () => {
+  // The double-misconfiguration case: both flags present but the runtime does
+  // not prove this is a Deploy Preview. Fail closed rather than risk fixtures
+  // in production.
+  await withEnvironment({ DEMO_MODE: '1', DEMO_MODE_PREVIEW: '1' }, async () => {
+    const tasksResponse = await listTasks(makeRequest('/api/tasks'));
+    const createResponse = await createTask(
+      makeRequest('/api/create-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskName: 'Fictional test event' }),
+      }),
+    );
+    assert.equal(tasksResponse.status, 503);
+    assert.equal(createResponse.status, 503);
+  });
+});
+
 test('production refuses demo even with explicit preview and local flags', async () => {
   await withEnvironment(
     {
       DEMO_MODE: '1',
       DEMO_MODE_PREVIEW: '1',
+      DEMO_DEPLOY_CONTEXT: 'production',
       NETLIFY_DEV: 'true',
-      CONTEXT: 'production',
     },
     async () => {
       const tasksResponse = await listTasks(makeRequest('/api/tasks'));
@@ -120,7 +148,7 @@ test('production refuses demo even with explicit preview and local flags', async
 });
 
 test('explicit production with no preview authorization refuses demo', async () => {
-  await withEnvironment({ DEMO_MODE: '1', CONTEXT: 'production' }, async () => {
+  await withEnvironment({ DEMO_MODE: '1', DEMO_DEPLOY_CONTEXT: 'production' }, async () => {
     const tasksResponse = await listTasks(makeRequest('/api/tasks'));
     const createResponse = await createTask(
       makeRequest('/api/create-task', {
@@ -142,7 +170,23 @@ test('invalid demo and preview settings fail closed', async () => {
   });
 
   await withEnvironment(
-    { DEMO_MODE: '1', CONTEXT: 'deploy-preview', DEMO_MODE_PREVIEW: 'true' },
+    {
+      DEMO_MODE: '1',
+      DEMO_MODE_PREVIEW: 'true',
+      DEMO_DEPLOY_CONTEXT: 'deploy-preview',
+    },
+    async () => {
+      const response = await listTasks(makeRequest('/api/tasks'));
+      assert.equal(response.status, 503);
+    },
+  );
+
+  await withEnvironment(
+    {
+      DEMO_MODE: '1',
+      DEMO_MODE_PREVIEW: '1',
+      DEMO_DEPLOY_CONTEXT: 'branch-deploy',
+    },
     async () => {
       const response = await listTasks(makeRequest('/api/tasks'));
       assert.equal(response.status, 503);
@@ -151,7 +195,7 @@ test('invalid demo and preview settings fail closed', async () => {
 });
 
 test('client-controlled values cannot grant preview demo permission', async () => {
-  await withEnvironment({ DEMO_MODE: '1', CONTEXT: 'deploy-preview' }, async () => {
+  await withEnvironment({ DEMO_MODE: '1', DEMO_DEPLOY_CONTEXT: 'deploy-preview' }, async () => {
     const response = await listTasks(
       makeRequest('/api/tasks?DEMO_MODE_PREVIEW=1', {
         headers: { 'X-Demo-Mode-Preview': '1' },
@@ -194,7 +238,11 @@ test('demo disabled preserves password enforcement on both endpoints', async () 
 
 test('preview demo serves fixtures and clearly refuses writes', async () => {
   await withEnvironment(
-    { DEMO_MODE: '1', CONTEXT: 'deploy-preview', DEMO_MODE_PREVIEW: '1' },
+    {
+      DEMO_MODE: '1',
+      DEMO_MODE_PREVIEW: '1',
+      DEMO_DEPLOY_CONTEXT: 'deploy-preview',
+    },
     async () => {
       const response = await createTask(
         makeRequest('/api/create-task', {

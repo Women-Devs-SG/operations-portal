@@ -8,12 +8,14 @@
 
 ## 2. Demo module
 
-- [x] 2.1 Add `lib/demo.mjs` exporting `isDemoMode()`, truthy only for `DEMO_MODE`
-      of `1` or `true`
+- [x] 2.1 Add `lib/demo.mjs` exporting `demoStatus()`, truthy only for
+      `DEMO_MODE` of `1` or `true`
 - [x] 2.2 Replace the `CONTEXT`-only production interlock with a fail-closed
       runtime permission check: local `NETLIFY_DEV=true`, or explicit
-      `DEMO_MODE_PREVIEW=1` authorization for Deploy Preview Functions; explicit
-      production context always refuses demo mode
+      `DEMO_MODE_PREVIEW=1` plus custom
+      `DEMO_DEPLOY_CONTEXT=deploy-preview` for Deploy Preview Functions;
+      explicit production context always refuses demo mode, and an absent
+      runtime marker refuses even with the preview permission
 - [x] 2.3 Expose `listDemoTasks()` and `addDemoTask()` over a scratch file in the OS
       temp directory, so both functions see the same demo tasks
       — first built as a module-level array; that cannot work across two separate
@@ -46,8 +48,9 @@
 - [x] 4.2 Add a no-credentials quick start to `README.md`, including that any
       password unlocks the demo
 - [x] 4.3 Note in `DEPLOYMENT.md` that `DEMO_MODE` must not be set on the live site
-- [x] 4.4 Document `DEMO_MODE_PREVIEW=1` as a Functions-scoped Deploy Preview
-      variable only
+- [x] 4.4 Document `DEMO_MODE_PREVIEW=1` and
+      `DEMO_DEPLOY_CONTEXT=deploy-preview` as Functions-scoped Deploy Preview
+      variables only
 - [ ] 4.5 Verify the preview permission is absent from production scope
 
 ## 5. Verify
@@ -64,9 +67,9 @@
       default; local Netlify Dev allowed; preview allowed only with explicit
       server-side permission; missing context/permission refused; explicit
       production refused; invalid values refused; client-provided flags ignored
-- [x] 5.6 With `DEMO_MODE=1`, missing `CONTEXT`, and no preview authorization,
+- [x] 5.6 With `DEMO_MODE=1`, missing `DEMO_DEPLOY_CONTEXT`, and no preview authorization,
       confirm both endpoints return `503` before password bypass
-- [x] 5.7 With `CONTEXT=production` and demo/preview flags set, confirm both
+- [x] 5.7 With `DEMO_DEPLOY_CONTEXT=production` and demo/preview flags set, confirm both
       endpoints return `503`; verify the demo branch exits before Google clients
 - [x] 5.8 With `DEMO_MODE` unset, confirm the real path still returns `503` when
       `PORTAL_PASSWORD` is unset and `401` on a wrong password
@@ -74,6 +77,6 @@
       loads in a browser after typing any password
       — 5.1-5.6 were verified by invoking both handlers directly across 18 cases;
       this last one needs a browser and the Netlify CLI
-- [ ] 5.10 In a Netlify Deploy Preview, verify the Function-scoped preview flag is
-      available at runtime; verify that the same variable is absent from production
-      Functions. Do not log its value in public build logs.
+- [ ] 5.10 In a Netlify Deploy Preview, verify both Function-scoped preview
+      variables are available at runtime; verify that both are absent from
+      production Functions. Do not log their values in public build logs.

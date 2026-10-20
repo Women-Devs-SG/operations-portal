@@ -21,7 +21,8 @@ name, or a real Drive link on screen.
   Telegram calls whatsoever.
 - Activate it only from an explicit `DEMO_MODE` environment variable and only in
   permitted runtimes: local `netlify dev`, or a Deploy Preview with a separate
-  `DEMO_MODE_PREVIEW=1` variable scoped to Functions for Deploy Previews only.
+  `DEMO_MODE_PREVIEW=1` and `DEMO_DEPLOY_CONTEXT=deploy-preview` variables
+  scoped to Functions for Deploy Previews only.
 - Refuse demo requests in explicit production context, for invalid configuration,
   or when no permitted runtime authorization is present. Do not rely on `CONTEXT`
   being available in a Function invocation.
@@ -47,9 +48,9 @@ name, or a real Drive link on screen.
 - **Changed**: `netlify/functions/create-task.mjs` and `netlify/functions/tasks.mjs`
   gain a demo branch ahead of the password check; `.env.example` documents
   `DEMO_MODE`; `README.md` gains a no-credentials quick start.
-- **Configuration**: `DEMO_MODE` is optional. `DEMO_MODE_PREVIEW` is an explicit
-  server-side permission that must be scoped to Functions in Deploy Preview
-  contexts only; it must never be available to production Functions. Production
-  refuses demo mode even if `CONTEXT` is explicitly `production`.
+- **Configuration**: `DEMO_MODE` is optional. `DEMO_MODE_PREVIEW` and
+  `DEMO_DEPLOY_CONTEXT` are explicit server-side permissions that must be scoped
+  to Functions in Deploy Preview contexts only; neither may be available to
+  production Functions.
 - **Unaffected**: `public/` needs no change. In demo mode the unlock screen still
   appears and any password gets in, because the listing request succeeds regardless.
