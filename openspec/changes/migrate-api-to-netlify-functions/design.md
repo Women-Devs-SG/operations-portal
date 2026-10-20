@@ -52,7 +52,7 @@ Render. Rejected because it means rewriting all four helpers against `req`/`res`
 a long-running process earns nothing for two stateless handlers.
 
 **Shared password in a header, compared timing-safely, failing closed.** An unset or
-under-12-character `PORTAL_PASSWORD` returns `503` for every request rather than
+empty `PORTAL_PASSWORD` returns `503` for every request rather than
 defaulting to open — a misconfigured deploy must not be a public one. Rejected
 alternatives: Netlify Identity (too much operational overhead for a handful of
 volunteers) and HTTP Basic auth (browser-native, but the credential prompt cannot be
@@ -110,9 +110,9 @@ edge backs up the same header set by `lib/http.mjs`. The CSP is strict —
 
 - **A shared password is weak by construction.** No per-user attribution, and
   rotation means telling everyone at once. Accepted: it is a large improvement over
-  none, and the fail-closed length floor blocks the worst misconfigurations.
-- **No rate limiting.** A 12-character minimum plus timing-safe comparison is the
-  only brute-force defence. Netlify rate limiting can be layered on later.
+  none, and the fail-closed empty-value check blocks an unconfigured deployment.
+- **No rate limiting.** Timing-safe comparison is the only built-in brute-force
+  defence. Netlify rate limiting can be layered on later.
 - **The password is only as private as the browser tab.** It lives in
   `sessionStorage` and is readable by any script on the page; the CSP forbidding
   third-party scripts is what keeps that acceptable.

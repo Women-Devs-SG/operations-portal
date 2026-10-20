@@ -105,7 +105,7 @@ other path.
 
 - **WHEN** demo mode is not active
 - **THEN** the shared-password check applies in full, including its fail-closed
-  behaviour for an unset or too-short password
+  behaviour for an unset or empty password
 
 ### Requirement: Demo Mode Preserves The Real Contract
 

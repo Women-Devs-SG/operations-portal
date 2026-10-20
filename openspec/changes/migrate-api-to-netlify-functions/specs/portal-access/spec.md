@@ -49,8 +49,8 @@ multi-byte characters are handled correctly.
 
 ### Requirement: Fail Closed On Misconfiguration
 
-The system SHALL refuse all requests when `PORTAL_PASSWORD` is unset or shorter
-than 12 characters, so an incomplete deployment is never an open one.
+The system SHALL refuse all requests when `PORTAL_PASSWORD` is unset or empty, so
+an incomplete deployment is never an open one.
 
 #### Scenario: Password not configured
 
@@ -59,10 +59,10 @@ than 12 characters, so an incomplete deployment is never an open one.
   contact an administrator
 - **AND** the misconfiguration is logged server-side
 
-#### Scenario: Password too short
+#### Scenario: Password is non-empty
 
-- **WHEN** `PORTAL_PASSWORD` is set to fewer than 12 characters
-- **THEN** requests are refused exactly as if it were unset
+- **WHEN** `PORTAL_PASSWORD` is set to any non-empty value
+- **THEN** an exactly matching request password is accepted regardless of length
 
 ### Requirement: Authenticated Responses Are Not Cached
 

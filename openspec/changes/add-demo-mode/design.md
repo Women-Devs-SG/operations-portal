@@ -2,7 +2,7 @@
 
 Both functions currently follow the same order: method check, `requirePassword`,
 then Google work via `getGoogleClients()`, which throws when credentials are absent.
-`lib/auth.mjs` deliberately fails closed — an unset or short `PORTAL_PASSWORD`
+`lib/auth.mjs` deliberately fails closed — an unset or empty `PORTAL_PASSWORD`
 returns `503` to everything — so a contributor with no `.env` gets a `503` before
 any handler logic runs. Demo mode has to slot in ahead of that check without
 weakening it for the real deployment.

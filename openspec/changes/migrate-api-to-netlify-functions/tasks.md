@@ -1,7 +1,7 @@
 ## 1. Shared helpers
 
 - [x] 1.1 Add `lib/auth.mjs`: timing-safe `X-Portal-Password` check that fails closed
-      below 12 characters
+      when the configured password is missing or empty
 - [x] 1.2 Add `lib/google.mjs`: lazily built, per-instance-cached Sheets and Drive
       clients
 - [x] 1.3 Add `lib/http.mjs`: `json`, `methodNotAllowed`, `readJsonObject`, and a
@@ -38,9 +38,9 @@
       `status = 200`, keeping the browser same-origin
 - [x] 3.3 Declare the site CSP and the framing, sniffing, referrer, permissions, and
       HSTS headers, plus `no-store` for `/api/*`
-- [x] 3.4 Add `PORTAL_PASSWORD` to `.env.example` with the length rule and a
+- [x] 3.4 Add `PORTAL_PASSWORD` to `.env.example` with the non-empty rule and a
       generation command
-- [ ] 3.5 Set `PORTAL_PASSWORD` (12+ characters) alongside the Google and Telegram
+- [ ] 3.5 Set a non-empty `PORTAL_PASSWORD` alongside the Google and Telegram
       variables in the Netlify site environment
 - [ ] 3.6 Link the repository to a Netlify site and confirm the first deploy serves
       `public/`
@@ -64,7 +64,7 @@ Google credentials configured, so a skipped guard would surface as a `500`
 instead of the expected status. 5.6–5.10 need live credentials and a browser.
 
 - [x] 5.1 With `PORTAL_PASSWORD` unset, confirm both endpoints answer `503`
-- [x] 5.2 With it set too short, confirm both endpoints still answer `503`
+- [x] 5.2 With it set to an empty value, confirm both endpoints still answer `503`
 - [x] 5.3 Confirm a request with no or wrong header answers `401`, and that no row
       appears in the Sheet
 - [x] 5.4 Confirm a wrong method answers `405` with the right `Allow` header, even

@@ -33,7 +33,7 @@ validation, and the same auth code, with fixtures behind it.
 The interesting parts, roughly in order:
 
 - **`lib/auth.mjs`** — the shared-password check. It compares in constant time and
-  fails closed when `PORTAL_PASSWORD` is unset or under 12 characters. A bypass, a
+  fails closed when `PORTAL_PASSWORD` is unset or empty. A bypass, a
   timing oracle, or a way to make it fail _open_ is the highest-value finding here.
 - **`lib/demo.mjs`** — the demo-mode interlock. Demo mode drops the password check,
   so anything that lets it activate in the production context is a real

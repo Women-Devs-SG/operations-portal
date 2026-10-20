@@ -240,7 +240,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for deploying to Netlify.
 
 In normal operation, both endpoints require an `X-Portal-Password` header matching
 `PORTAL_PASSWORD`. Requests without it return `401`. If `PORTAL_PASSWORD` is missing
-or invalid, the API returns `503` and refuses all traffic. Local demo mode does not
+or empty, the API returns `503` and refuses all traffic. Local demo mode does not
 require real credentials or make external calls. Demo mode is deliberately refused
 in Netlify's production context so fictional data cannot be presented as live
 volunteer data.
