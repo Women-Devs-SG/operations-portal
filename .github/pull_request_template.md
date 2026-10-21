@@ -11,7 +11,7 @@
       this diff.
 - [ ] Behaviour changes have an OpenSpec change under `openspec/changes/`
       (not needed for fixes, refactors, docs, or tooling).
-- [ ] `npx @fission-ai/openspec@latest validate --all --strict` passes.
+- [ ] `npm run openspec:validate` passes.
 - [ ] Checked locally with `npm run dev` in demo mode.
 
 ## Notes for the reviewer
