@@ -69,5 +69,8 @@ export function useEventCreation(
     }
   }
 
-  return { submit, submitting, status };
+  // Success belongs to the submission that produced it; errors stay with the retained draft.
+  const clearSuccess = () => setStatus((current) => (current?.kind === 'success' ? null : current));
+
+  return { submit, submitting, status, clearSuccess };
 }

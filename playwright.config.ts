@@ -10,5 +10,7 @@ export default defineConfig({
     url: 'http://127.0.0.1:8899',
     reuseExistingServer: false,
     timeout: 30_000,
+    // SIGKILL would skip tests/server.mjs cleanup of its temporary demo store.
+    gracefulShutdown: { signal: 'SIGTERM', timeout: 2_000 },
   },
 });

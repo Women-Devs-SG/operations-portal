@@ -385,3 +385,16 @@ test('a failed list refresh after creation gives reload guidance that works', as
     page.getByRole('heading', { name: 'Synthetic refresh-failure workshop' }),
   ).toBeVisible();
 });
+
+test('success guidance does not linger after leaving and reopening the form', async ({
+  eventPage: page,
+}) => {
+  await page.getByLabel('Event Name').fill('Synthetic lingering-success workshop');
+  await page.getByRole('button', { name: /Create event &|Retry event creation/ }).click();
+  const success = page.getByText(/saved to your local demo only/);
+  await expect(success).toBeVisible();
+  await page.getByRole('button', { name: 'Back to portal' }).click();
+  await page.getByRole('button', { name: 'Create an event', exact: true }).click();
+  await expect(page.getByLabel('Event Name')).toHaveValue('');
+  await expect(success).toHaveCount(0);
+});

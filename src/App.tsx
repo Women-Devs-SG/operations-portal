@@ -117,10 +117,15 @@ export default function App() {
     return result.kind === 'success';
   }
 
-  const { submit, status, submitting } = useEventCreation(handleCreated, handleSessionExpired);
+  const { submit, status, submitting, clearSuccess } = useEventCreation(
+    handleCreated,
+    handleSessionExpired,
+  );
 
-  const update = (field: keyof TaskInput, value: string) =>
+  const update = (field: keyof TaskInput, value: string) => {
+    clearSuccess();
     setInput((current) => ({ ...current, [field]: value }));
+  };
 
   return (
     <Routes>
@@ -154,7 +159,10 @@ export default function App() {
             <TaskCreatePage
               demoMode={demoMode}
               input={input}
-              onBack={() => navigate('/')}
+              onBack={() => {
+                clearSuccess();
+                navigate('/');
+              }}
               onChange={update}
               onSubmit={submit}
               status={status}

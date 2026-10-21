@@ -26,14 +26,15 @@
 - [x] Verify last-submission banner guidance, retry action and successful recovery.
 - [x] Add GitHub Actions for lint, type-check, demo tests, OpenSpec and production audit.
 - [x] Confirm the hosted Ubuntu workflow succeeds on implementation commit ffa16a9.
-- [ ] Confirm upstream PR checks run before marking ready (currently no checks reported).
+- [x] Confirm upstream PR checks run before marking ready (both upstream workflows passed
+      after the 2026-10-22 rebase).
 
 ## Verification (2026-10-02)
 
 Base: PR #5's branch at 965b7af. Tests now use one Playwright runner, shared browser
 setup and one TypeScript configuration. Removed Vitest, Testing Library and jsdom;
-`npm test` builds the frontend and runs validation rules, API contracts and real
-browser flows. Coverage includes boundaries, keyboard focus, native incomplete
+the Playwright suite (then `npm test`; `npm run test:e2e` since the 2026-10-22 rebase)
+builds the frontend and runs validation rules, API contracts and real browser flows. Coverage includes boundaries, keyboard focus, native incomplete
 dates, API/network retry, authentication/draft restoration, Unicode URLs,
 duplicate requests across routes and backend rejection without frontend checks.
 All 40 active cases pass (24 direct validation cases, 1 API contract case
@@ -63,3 +64,15 @@ Actions policies (403); maintainers must confirm upstream execution before ready
 HTTPS-only acceptance remains deliberately unmet: both client and backend retain
 existing HTTP(S) acceptance. No new date rules. Draft PR/push authorized on
 2026-10-02. No merge or deployment.
+
+## Verification (2026-10-22, rebase)
+
+Rebased onto PR #5's branch at c8f62f5 and ported to its react-router, shared
+component and theme-token structure. `npm test` now runs the base branch's Node
+tests (14 pass). `npm run test:e2e` builds the frontend and runs the Playwright
+suite: 42 active cases pass and the HTTPS-only contract stays pending. Native
+`maxLength` was removed so overlong pastes reach the validator, OpenSpec is pinned
+as a dev dependency, a stale success message clears when the operator edits or
+leaves the form, and failed list refreshes direct the operator to reload the page.
+Lint, type-check, Prettier, production build, strict OpenSpec (8 passed) and the
+production audit (0 vulnerabilities) pass.
