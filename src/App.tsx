@@ -5,7 +5,16 @@ import ProtectedRoute from './components/ProtectedRoute';
 import EventsPage from './pages/EventsPage';
 import TaskCreatePage from './pages/TaskCreatePage';
 import UnlockPage from './pages/UnlockPage';
-import type { LoadTasksResult, PortalView, Task, UnlockResult } from './types';
+import type { LoadTasksResult, PortalView, Task, TaskInput, UnlockResult } from './types';
+import { useEventCreation } from './useEventCreation';
+
+const emptyInput: TaskInput = {
+  taskName: '',
+  formUrl: '',
+  eventDate: '',
+  eventLocation: '',
+  eventOneLiner: '',
+};
 
 export default function App() {
   const navigate = useNavigate();
@@ -15,6 +24,8 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [listMessage, setListMessage] = useState('Loading tasks…');
   const initialSessionCheck = useRef<Promise<LoadTasksResult> | null>(null);
+  // Drafts live above the routes so an authentication redirect keeps them.
+  const [input, setInput] = useState<TaskInput>(emptyInput);
 
   const lock = useCallback((message: string) => {
     clearPassword();
@@ -94,10 +105,22 @@ export default function App() {
     }
   }
 
-  function handleSessionExpired() {
-    lock('Session expired. Enter the portal password again.');
+  function handleSessionExpired(message = 'Session expired. Enter the portal password again.') {
+    lock(message);
     navigate('/unlock', { replace: true });
   }
+
+  async function handleCreated(): Promise<boolean> {
+    setInput(emptyInput);
+    const result = await loadTasks();
+    if (result.kind === 'unauthorized') handleSessionExpired();
+    return result.kind === 'success';
+  }
+
+  const { submit, status, submitting } = useEventCreation(handleCreated, handleSessionExpired);
+
+  const update = (field: keyof TaskInput, value: string) =>
+    setInput((current) => ({ ...current, [field]: value }));
 
   return (
     <Routes>
@@ -130,8 +153,12 @@ export default function App() {
           <ProtectedRoute view={view}>
             <TaskCreatePage
               demoMode={demoMode}
-              onEventCreated={() => loadTasks()}
-              onSessionExpired={handleSessionExpired}
+              input={input}
+              onBack={() => navigate('/')}
+              onChange={update}
+              onSubmit={submit}
+              status={status}
+              submitting={submitting}
             />
           </ProtectedRoute>
         }

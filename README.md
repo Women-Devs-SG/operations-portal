@@ -343,17 +343,17 @@ openspec/
 **proposed** — each change carries delta specs (`ADDED` / `MODIFIED` / `REMOVED`
 requirements) that are merged into the main specs once the work ships.
 
-The CLI needs Node.js 20.19+ and can be run without installing:
+The CLI is pinned as a dev dependency, so after `npm ci` everyone runs the same
+version:
 
 ```bash
-npx @fission-ai/openspec@latest list --specs   # what the portal does today
-npx @fission-ai/openspec@latest list           # what is proposed
-npx @fission-ai/openspec@latest show task-intake
-npx @fission-ai/openspec@latest validate --all --strict
+npx openspec list --specs   # what the portal does today
+npx openspec list           # what is proposed
+npx openspec show task-intake
+npm run openspec:validate   # openspec validate --all --strict
 ```
 
-Install it globally (`npm install -g @fission-ai/openspec@latest`) to drop the `npx`
-prefix. Claude Code users get the workflow as slash commands: `/opsx:propose`,
+Claude Code users get the workflow as slash commands: `/opsx:propose`,
 `/opsx:apply`, `/opsx:archive`.
 
 ### Contributing & PR Workflow
@@ -363,10 +363,10 @@ prefix. Claude Code users get the workflow as slash commands: `/opsx:propose`,
    `openspec/changes/<change-name>/` — or run `/opsx:propose "your idea"` — and get
    the proposal and delta specs agreed before writing code.
 3. Implement against the agreed specs and tick off `tasks.md` as you go.
-4. Run `npx @fission-ai/openspec@latest validate --all --strict` before opening a PR.
+4. Run `npm run openspec:validate` before opening a PR.
 5. Once the work is merged and deployed, archive the change so its deltas fold into
    `openspec/specs/`: `/opsx:archive` or
-   `npx @fission-ai/openspec@latest archive <change-name>`.
+   `npx openspec archive <change-name>`.
 6. `main` is protected: every change goes through a pull request with a descriptive
    title. Approvals are not mandatory, so a maintainer may merge their own PR after
    review.
