@@ -60,7 +60,7 @@ export function useEventCreation(
         // Don't invite a duplicate creation on retry.
         setStatus({
           kind: 'success',
-          message: `${message ?? 'Event created.'} The list could not be refreshed. Return to the portal to reload it.`,
+          message: `${message ?? 'Event created.'} The list could not be refreshed. Reload this browser page to try loading it again.`,
         });
       }
     } finally {

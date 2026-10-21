@@ -367,3 +367,21 @@ test('pending guard prevents synchronous and route-remount duplicates', async ({
   ).toBeEnabled();
   expect(requests).toBe(1);
 });
+
+test('a failed list refresh after creation gives reload guidance that works', async ({
+  eventPage: page,
+}) => {
+  await page.getByLabel('Event Name').fill('Synthetic refresh-failure workshop');
+  await page.route('**/api/tasks', (route) => route.abort());
+  await page.getByRole('button', { name: /Create event &|Retry event creation/ }).click();
+  await expect(
+    page.getByText(/could not be refreshed\. Reload this browser page to try loading it again\./),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry event creation' })).toHaveCount(0);
+  await page.unroute('**/api/tasks');
+  // A reload re-runs the session check, which lands on the refreshed portal list.
+  await page.reload();
+  await expect(
+    page.getByRole('heading', { name: 'Synthetic refresh-failure workshop' }),
+  ).toBeVisible();
+});
