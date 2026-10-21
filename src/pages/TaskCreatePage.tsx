@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import Card from '../components/Card';
 import EventForm from '../components/EventForm';
 import type { EventFormProps } from '../components/EventForm';
@@ -5,9 +6,19 @@ import type { EventFormProps } from '../components/EventForm';
 interface TaskCreatePageProps extends EventFormProps {
   demoMode: boolean;
   onBack: () => void;
+  onLeave: () => void;
 }
 
-export default function TaskCreatePage({ demoMode, onBack, ...formProps }: TaskCreatePageProps) {
+export default function TaskCreatePage({
+  demoMode,
+  onBack,
+  onLeave,
+  ...formProps
+}: TaskCreatePageProps) {
+  // However the operator leaves (button, browser Back, redirect), a success
+  // message belongs to that visit and must not greet the next one.
+  useEffect(() => onLeave, [onLeave]);
+
   return (
     <main className="mx-auto w-[min(100%-2rem,760px)] py-12 pb-[72px] max-[600px]:pt-[22px]">
       <Card>

@@ -379,8 +379,10 @@ test('a failed list refresh after creation gives reload guidance that works', as
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Retry event creation' })).toHaveCount(0);
   await page.unroute('**/api/tasks');
-  // A reload re-runs the session check, which lands on the refreshed portal list.
+  // A reload re-runs the session check: the protected route redirects through
+  // /unlock, which then returns to the refreshed portal list.
   await page.reload();
+  await expect(page).toHaveURL('/');
   await expect(
     page.getByRole('heading', { name: 'Synthetic refresh-failure workshop' }),
   ).toBeVisible();
@@ -394,6 +396,15 @@ test('success guidance does not linger after leaving and reopening the form', as
   const success = page.getByText(/saved to your local demo only/);
   await expect(success).toBeVisible();
   await page.getByRole('button', { name: 'Back to portal' }).click();
+  await page.getByRole('button', { name: 'Create an event', exact: true }).click();
+  await expect(page.getByLabel('Event Name')).toHaveValue('');
+  await expect(success).toHaveCount(0);
+
+  await page.getByLabel('Event Name').fill('Synthetic browser-back workshop');
+  await page.getByRole('button', { name: /Create event &|Retry event creation/ }).click();
+  await expect(success).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL('/');
   await page.getByRole('button', { name: 'Create an event', exact: true }).click();
   await expect(page.getByLabel('Event Name')).toHaveValue('');
   await expect(success).toHaveCount(0);

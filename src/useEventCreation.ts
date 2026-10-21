@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createTask } from './api';
 import { serverErrorField } from './validation';
 import type { FieldErrors } from './validation';
@@ -70,7 +70,11 @@ export function useEventCreation(
   }
 
   // Success belongs to the submission that produced it; errors stay with the retained draft.
-  const clearSuccess = () => setStatus((current) => (current?.kind === 'success' ? null : current));
+  // Stable identity: TaskCreatePage runs it from an unmount-only effect.
+  const clearSuccess = useCallback(
+    () => setStatus((current) => (current?.kind === 'success' ? null : current)),
+    [],
+  );
 
   return { submit, submitting, status, clearSuccess };
 }

@@ -159,10 +159,8 @@ export default function App() {
             <TaskCreatePage
               demoMode={demoMode}
               input={input}
-              onBack={() => {
-                clearSuccess();
-                navigate('/');
-              }}
+              onBack={() => navigate('/')}
+              onLeave={clearSuccess}
               onChange={update}
               onSubmit={submit}
               status={status}
